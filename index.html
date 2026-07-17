@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HCTP Summer Camp — Hanaim Community Tutorial Program</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Serif+KR:wght@300;500&family=Noto+Sans+KR:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:        #131011;
+    --bg-soft:   #1c1719;
+    --ink:       #f2ece2;
+    --gold:      #c9a45c;
+    --gold-dim:  #8a7040;
+    --muted:     #9b9089;
+    --card-border: rgba(201,164,92,.55);
+    --radius: 22px;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  body{
+    background:
+      radial-gradient(1200px 600px at 50% -200px, rgba(201,164,92,.10), transparent 60%),
+      var(--bg);
+    color: var(--ink);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+  }
+
+  /* ── 헤더 ───────────────────────────── */
+  header{ text-align:center; padding: clamp(46px, 9vw, 96px) 20px 26px; }
+  .eyebrow{
+    font-family: 'Noto Serif KR', serif;
+    font-size: 12px;
+    letter-spacing: .42em; text-indent: .42em;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+  h1{
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 400;
+    font-size: clamp(52px, 12vw, 96px);
+    letter-spacing: .14em;
+    line-height: 1.05;
+    margin-top: 14px;
+  }
+  .tagline{
+    margin-top: 14px;
+    font-family: 'Noto Serif KR', serif;
+    font-weight: 300;
+    font-size: 15px;
+    color: var(--muted);
+  }
+  .rule{
+    width: 72px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin: 26px auto 0;
+  }
+
+  /* 연도 선택 */
+  .year-toggle{
+    display:flex; gap:12px; justify-content:center; margin-top: 24px;
+  }
+  .year-toggle button{
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 19px;
+    letter-spacing: .18em; text-indent: .18em;
+    padding: 9px 26px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--gold-dim);
+    background: rgba(19,16,17,.5);
+    color: var(--gold);
+    cursor: pointer;
+    transition: background .25s ease, color .25s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .year-toggle button.on{
+    background: var(--gold); color:#131011; border-color: var(--gold);
+    font-weight: 600;
+  }
+
+  /* ── 섹션 제목 ───────────────────────── */
+  .section-head{ text-align:center; padding: 46px 20px 8px; }
+  .section-eyebrow{
+    font-size: 11.5px;
+    letter-spacing: .45em; text-indent: .45em;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+  .section-title{
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 400; font-style: italic;
+    font-size: clamp(28px, 6vw, 42px);
+    letter-spacing: .1em;
+    margin-top: 8px;
+  }
+  .section-sub{
+    font-size: 12px;
+    letter-spacing: .14em;
+    color: var(--gold-dim);
+    margin-top: 12px;
+    line-height: 1.8;
+    padding: 0 12px;
+  }
+
+  /* ── About ──────────────────────────── */
+  .about-wrap{
+    max-width: 760px;
+    margin: 14px auto 0;
+    padding: 0 clamp(18px, 4vw, 40px);
+  }
+  .about-card{
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    background: var(--bg-soft);
+    box-shadow:
+      0 0 0 5px rgba(19,16,17,1),
+      0 0 0 6px rgba(201,164,92,.28),
+      0 24px 50px -18px rgba(0,0,0,.75);
+    padding: clamp(22px, 4.6vw, 36px);
+    font-family: 'Noto Serif KR', serif;
+    font-size: 14.5px;
+    line-height: 2;
+    color: var(--ink);
+  }
+  .about-card p + p{ margin-top: 14px; }
+  .about-card b{ color: var(--gold); font-weight: 500; }
+
+  /* ── Day 슬라이드쇼 카드 ─────────────── */
+  .days{
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 26px clamp(18px, 4vw, 40px) 30px;
+    display: grid;
+    gap: clamp(30px, 6vw, 48px);
+  }
+  .day-card{ }
+  .slide-frame{
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3 / 4;                 /* 폰 세로 화면에 꽉 차게 */
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--bg-soft);
+    border: 1px solid var(--card-border);
+    box-shadow:
+      0 0 0 5px rgba(19,16,17,1),
+      0 0 0 6px rgba(201,164,92,.28),
+      0 24px 50px -18px rgba(0,0,0,.75);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  @supports not (aspect-ratio: 3 / 4){
+    .slide-frame{ height: 0; padding-bottom: 133%; }
+  }
+  @media (min-width: 700px){
+    .slide-frame{ aspect-ratio: 16 / 10; } /* 넓은 화면에선 가로형 */
+    @supports not (aspect-ratio: 16 / 10){
+      .slide-frame{ padding-bottom: 62.5%; }
+    }
+  }
+  .slide{
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity .7s ease;
+  }
+  .slide.active{ opacity: 1; }
+  .slide-frame::after{
+    content:"";
+    position:absolute; inset:0;
+    background: linear-gradient(to top, rgba(19,16,17,.68) 4%, transparent 30%);
+    pointer-events:none;
+  }
+  .day-tag{
+    position: absolute; top: 14px; left: 16px; z-index: 3;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 17px;
+    letter-spacing: .22em;
+    color: var(--gold);
+    border: 1px solid var(--gold-dim);
+    border-radius: 999px;
+    padding: 6px 16px 5px;
+    background: rgba(19,16,17,.6);
+    backdrop-filter: blur(3px);
+  }
+  .slide-counter{
+    position: absolute; bottom: 14px; left: 18px; z-index: 3;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 15px;
+    letter-spacing: .16em;
+    color: var(--ink);
+    text-shadow: 0 1px 8px rgba(0,0,0,.85);
+    pointer-events: none;
+  }
+  .slide-hint{
+    position: absolute; bottom: 16px; right: 18px; z-index: 3;
+    font-size: 10px;
+    letter-spacing: .24em;
+    text-transform: uppercase;
+    color: rgba(242,236,226,.65);
+    text-shadow: 0 1px 8px rgba(0,0,0,.85);
+    pointer-events: none;
+  }
+  .s-arrow{
+    position: absolute; top: 50%; z-index: 4;
+    -webkit-transform: translateY(-50%);
+    transform: translateY(-50%);
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    border: 1px solid var(--gold-dim);
+    background: rgba(19,16,17,.6);
+    backdrop-filter: blur(4px);
+    color: var(--gold);
+    cursor: pointer;
+    display: grid; place-items: center;
+    transition: background .25s ease;
+  }
+  .s-arrow svg{ width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .s-arrow:hover{ background: rgba(201,164,92,.85); color:#131011; }
+  .s-prev{ left: 12px; }
+  .s-next{ right: 12px; }
+
+  /* 데이터 없을 때 (2026 준비 전) */
+  .slide-frame.empty{ cursor: default; }
+  .coming{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:10px;
+  }
+  .coming span{
+    font-family:'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: clamp(30px, 7vw, 44px);
+    letter-spacing:.12em;
+    color: var(--gold);
+  }
+  .coming small{
+    font-size: 11px;
+    letter-spacing:.4em; text-indent:.4em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ── 비디오 카드 ─────────────────────── */
+  .video-gallery{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: clamp(22px, 3vw, 36px);
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 26px clamp(18px, 4vw, 40px) 80px;
+  }
+  @media (max-width: 480px){ .video-gallery{ grid-template-columns: 1fr; } }
+
+  .vcard{
+    border: 0; background: none; padding: 0;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    display: block; width: 100%;
+    transition: translate .4s ease;
+  }
+  .thumb{
+    position: relative; width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--card-border);
+    box-shadow:
+      0 0 0 5px rgba(19,16,17,1),
+      0 0 0 6px rgba(201,164,92,.28),
+      0 24px 50px -18px rgba(0,0,0,.75);
+    background: var(--bg-soft);
+  }
+  @supports not (aspect-ratio: 16 / 9){
+    .thumb{ height: 0; padding-bottom: 56.25%; }
+    .thumb video, .thumb img{ position:absolute; inset:0; }
+  }
+  .thumb video, .thumb img{
+    width: 100%; height: 100%;
+    object-fit: cover; display: block;
+    pointer-events: none;
+  }
+  .thumb::after{
+    content:"";
+    position:absolute; inset:0;
+    background: linear-gradient(to top, rgba(19,16,17,.72) 6%, transparent 40%);
+    pointer-events:none;
+  }
+  .play{
+    position: absolute; top: 50%; left: 50%; z-index: 2;
+    -webkit-transform: translate(-50%,-50%);
+    transform: translate(-50%,-50%);
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    background: rgba(19,16,17,.55);
+    border: 1.5px solid var(--gold);
+    backdrop-filter: blur(4px);
+    display: grid; place-items: center;
+    transition: background .3s ease;
+    pointer-events: none;
+  }
+  .play svg{ width:20px; height:20px; fill: var(--gold); margin-left: 4px; transition: fill .3s ease; }
+  .vlabel{
+    position: absolute; left: 16px; bottom: 12px; z-index: 3;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 15px;
+    letter-spacing: .14em;
+    color: var(--ink);
+    text-shadow: 0 1px 8px rgba(0,0,0,.85);
+    pointer-events: none;
+  }
+  @media (hover:hover){
+    .vcard:hover{ translate: 0 -6px; }
+    .vcard:hover .play{ background: rgba(201,164,92,.92); }
+    .vcard:hover .play svg{ fill:#131011; }
+  }
+  .vcard:focus-visible .thumb,
+  .slide-frame:focus-visible{ outline: 2px solid var(--gold); outline-offset: 8px; }
+  .video-empty{
+    grid-column: 1 / -1;
+    text-align:center;
+    color: var(--muted);
+    font-size: 13px;
+    letter-spacing: .2em;
+    padding: 30px 0;
+  }
+
+  footer{
+    text-align: center;
+    padding: 0 20px 64px;
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: .18em;
+    line-height: 2;
+  }
+  footer .gold{ color: var(--gold-dim); }
+
+  /* ── 라이트박스 (사진 확대 + 영상 재생) ── */
+  .lightbox{
+    position: fixed; inset: 0;
+    background: rgba(10,8,9,.95);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 100;
+    padding: 14px;
+  }
+  .lightbox.open{ display: flex; }
+  .lightbox video, .lightbox img{
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: 14px;
+    border: 1px solid var(--card-border);
+    box-shadow: 0 30px 80px -20px rgba(0,0,0,.9);
+    background: #000;
+    display: none;
+  }
+  .lightbox video.active, .lightbox img.active{ display: block; }
+  .close-btn{
+    position: absolute; top: 16px; right: 16px; z-index: 5;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--gold-dim);
+    background: rgba(19,16,17,.6);
+    color: var(--ink);
+    font-size: 20px;
+    cursor: pointer;
+    display: grid; place-items: center;
+    transition: background .25s ease;
+  }
+  .close-btn:hover{ background: rgba(201,164,92,.25); }
+  .lb-arrow{
+    position: absolute; top: 50%; z-index: 5;
+    -webkit-transform: translateY(-50%);
+    transform: translateY(-50%);
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    border: 1px solid var(--gold-dim);
+    background: rgba(19,16,17,.7);
+    color: var(--gold);
+    cursor: pointer;
+    display: none;
+    place-items: center;
+  }
+  .lightbox.img-mode .lb-arrow{ display: grid; }
+  .lb-arrow svg{ width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .lb-arrow:hover{ background: rgba(201,164,92,.9); color:#131011; }
+  .lb-prev{ left: 10px; }
+  .lb-next{ right: 10px; }
+  .lb-caption{
+    position: absolute; bottom: 18px; left: 0; right: 0; z-index: 5;
+    text-align: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 15px;
+    letter-spacing: .18em;
+    color: var(--muted);
+    pointer-events: none;
+    display: none;
+  }
+  .lightbox.img-mode .lb-caption{ display: block; }
+
+  @media (prefers-reduced-motion: reduce){
+    .slide, .vcard, .s-arrow, .year-toggle button{ transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <p class="eyebrow">Hanaim Community Tutorial Program</p>
+  <h1>HCTP</h1>
+  <p class="tagline">서머 캠프의 순간들 · Summer Camp Memories</p>
+  <div class="year-toggle" id="yearToggle" role="group" aria-label="연도 선택"></div>
+  <div class="rule"></div>
+</header>
+
+<!-- ══════════ About ══════════ -->
+<div class="section-head">
+  <h2 class="section-title">About Us</h2>
+</div>
+<div class="about-wrap">
+  <div class="about-card">
+    <p><b>Hanaim Community Tutorial Program (HCTP)</b> is offered by Hanaim Church,
+    a non-denominational church located in Elmwood Park, NJ.</p>
+    <p>“Hanaim”, with its roots in the Bible, means <b>togetherness</b> in Korean.
+    We believe that all of us need to learn to live together — embracing, respecting
+    and valuing others as they are, without judging them based on race, ethnicity,
+    gender, religion, or any other characteristics.</p>
+    <p>HCTP is part of our effort to serve the communities that we live in,
+    particularly children, who are our future.</p>
+  </div>
+</div>
+
+<!-- ══════════ 캠프 사진 (Day 1–5) ══════════ -->
+<div class="section-head">
+  <p class="section-eyebrow" id="campEyebrow">Summer Camp</p>
+  <h2 class="section-title">Camp Days</h2>
+  <p class="section-sub">카드가 화면 가운데 오면 3초마다 사진이 자동으로 바뀝니다<br>
+  좌우 화살표로 넘기고 · 사진을 탭하면 크게 볼 수 있어요</p>
+</div>
+<main class="days" id="days"></main>
+
+<!-- ══════════ 캠프 영상 ══════════ -->
+<div class="section-head">
+  <h2 class="section-title">Camp Videos</h2>
+  <p class="section-sub">탭하면 재생 · 전체화면 버튼이나 폰을 가로로 돌리면 크게 볼 수 있어요</p>
+</div>
+<section class="video-gallery" id="videoGallery"></section>
+
+<footer>
+  <span class="gold">©</span> HCTP · HANAIM CHURCH, ELMWOOD PARK NJ<br>
+  ALL RIGHTS RESERVED
+</footer>
+
+<!-- 라이트박스 -->
+<div class="lightbox" id="lightbox">
+  <button class="close-btn" id="closeBtn" aria-label="닫기">✕</button>
+  <button class="lb-arrow lb-prev" id="lbPrev" aria-label="이전 사진">
+    <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+  </button>
+  <button class="lb-arrow lb-next" id="lbNext" aria-label="다음 사진">
+    <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+  </button>
+  <video id="lbVideo" controls playsinline></video>
+  <img id="lbImg" alt="캠프 사진 크게 보기">
+  <p class="lb-caption" id="lbCaption"></p>
+</div>
+
+<script src="files.js"></script>
+<script>
+  /* ══════════════ 데이터 ══════════════
+     files.js 는 generate-files.ps1 실행으로 자동 생성됩니다.
+     window.HCTP_FILES = { "2025": { day1:[...], ..., videos:[...] }, "2026": {...} } */
+  const FILES = window.HCTP_FILES || {};
+  const DAY_KEYS = ["day1","day2","day3","day4","day5"];
+  const DAY_LABELS = { day1:"Day 1", day2:"Day 2", day3:"Day 3", day4:"Day 4", day5:"Day 5" };
+  const IMG_EXT = /\.(webp|jpe?g|png)$/i;
+  const VID_EXT = /\.mp4$/i;
+  const SLIDE_MS = 3000;
+
+  /* PowerShell JSON 변환 시 파일 1개짜리 폴더가 배열이 아닐 수 있어 정규화 */
+  const arr = v => v == null ? [] : (Array.isArray(v) ? v : [v]);
+  const yearData = y => FILES[y] || {};
+
+  /* ── 연도 자동 선택: 매년 8/24 이후에는 그 해, 이전에는 전년도 ── */
+  const now = new Date();
+  const cutoff = new Date(now.getFullYear(), 7, 24);            /* 8월 24일 */
+  let defYear = String(now >= cutoff ? now.getFullYear() : now.getFullYear() - 1);
+
+  let pillYears = [...new Set([...Object.keys(FILES), defYear])].sort();
+  if (!pillYears.length) pillYears = ["2025"];
+  if (!pillYears.includes(defYear)) defYear = pillYears[pillYears.length - 1];
+  let curYear = defYear;
+
+  /* ══════════════ 라이트박스 ══════════════ */
+  const lightbox = document.getElementById("lightbox");
+  const lbVideo  = document.getElementById("lbVideo");
+  const lbImg    = document.getElementById("lbImg");
+  const lbCap    = document.getElementById("lbCaption");
+  const lb = {
+    open: false,
+    imgCtrl: null,
+    openImage(ctrl){
+      this.imgCtrl = ctrl;
+      this.open = true;
+      lbVideo.classList.remove("active");
+      lightbox.classList.add("open", "img-mode");
+      this.refresh();
+    },
+    refresh(){
+      if (!this.imgCtrl) return;
+      lbImg.src = this.imgCtrl.currentSrc();
+      lbImg.classList.add("active");
+      lbCap.textContent = this.imgCtrl.label + " · " + (this.imgCtrl.idx + 1) + " / " + this.imgCtrl.length;
+    },
+    openVideo(src){
+      this.imgCtrl = null;
+      this.open = true;
+      lbImg.classList.remove("active");
+      lightbox.classList.remove("img-mode");
+      lightbox.classList.add("open");
+      lbVideo.src = src;
+      lbVideo.classList.add("active");
+      lbVideo.play().catch(function(){});
+    },
+    close(){
+      this.open = false;
+      this.imgCtrl = null;
+      lightbox.classList.remove("open", "img-mode");
+      lbVideo.pause();
+      lbVideo.removeAttribute("src");
+      lbVideo.load();
+      lbVideo.classList.remove("active");
+      lbImg.classList.remove("active");
+      lbImg.removeAttribute("src");
+    }
+  };
+  document.getElementById("closeBtn").addEventListener("click", () => lb.close());
+  lightbox.addEventListener("click", e => { if (e.target === lightbox) lb.close(); });
+  document.addEventListener("keydown", e => {
+    if (!lb.open) return;
+    if (e.key === "Escape") lb.close();
+    if (lb.imgCtrl && e.key === "ArrowLeft")  lb.imgCtrl.step(-1);
+    if (lb.imgCtrl && e.key === "ArrowRight") lb.imgCtrl.step(1);
+  });
+  document.getElementById("lbPrev").addEventListener("click", () => lb.imgCtrl && lb.imgCtrl.step(-1));
+  document.getElementById("lbNext").addEventListener("click", () => lb.imgCtrl && lb.imgCtrl.step(1));
+
+  /* 라이트박스 사진 스와이프 */
+  let lbTouchX = null;
+  lightbox.addEventListener("touchstart", e => { lbTouchX = e.touches[0].clientX; }, { passive:true });
+  lightbox.addEventListener("touchend", e => {
+    if (lbTouchX == null || !lb.imgCtrl) return;
+    const dx = e.changedTouches[0].clientX - lbTouchX;
+    if (Math.abs(dx) > 45) lb.imgCtrl.step(dx > 0 ? -1 : 1);
+    lbTouchX = null;
+  }, { passive:true });
+
+  /* ══════════════ Day 슬라이드쇼 카드 ══════════════ */
+  let controllers = [];
+
+  function createDayCard(year, key){
+    const label = DAY_LABELS[key] || key;
+    const files = arr(yearData(year)[key]).filter(f => IMG_EXT.test(f));
+
+    const card  = document.createElement("section");
+    card.className = "day-card";
+    const frame = document.createElement("div");
+    frame.className = "slide-frame";
+    frame.setAttribute("tabindex", "0");
+    frame.setAttribute("role", "button");
+    frame.setAttribute("aria-label", label + " 사진 크게 보기");
+    card.appendChild(frame);
+
+    /* 사진이 아직 없는 연도 (예: 2026 준비 전) */
+    if (!files.length){
+      frame.classList.add("empty");
+      frame.innerHTML =
+        '<div class="coming"><span>' + label + '</span><small>Coming Soon</small></div>';
+      return { el: card, label, idx:0, length:0,
+               currentSrc(){ return ""; }, step(){}, setActive(){}, tick(){} };
+    }
+
+    const imgA = new Image(), imgB = new Image();
+    imgA.className = imgB.className = "slide";
+    imgA.alt = imgB.alt = label + " 캠프 사진";
+    imgA.decoding = imgB.decoding = "async";
+    frame.append(imgA, imgB);
+    frame.insertAdjacentHTML("beforeend",
+      '<span class="day-tag">' + label + '</span>' +
+      '<span class="slide-counter"></span>' +
+      '<span class="slide-hint">Tap to enlarge</span>' +
+      '<button class="s-arrow s-prev" aria-label="이전 사진"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>' +
+      '<button class="s-arrow s-next" aria-label="다음 사진"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>');
+    const counter = frame.querySelector(".slide-counter");
+
+    let idx = 0, front = imgA, back = imgB, active = false, loading = false;
+    const src = i => year + "/" + key + "/" + encodeURIComponent(files[i]);
+
+    function show(i){
+      if (loading) return;
+      loading = true;
+      const target = ((i % files.length) + files.length) % files.length;
+      const pre = new Image();
+      pre.onload = () => {
+        idx = target;
+        back.src = pre.src;
+        back.classList.add("active");
+        front.classList.remove("active");
+        const t = front; front = back; back = t;
+        counter.textContent = (idx + 1) + " / " + files.length;
+        if (lb.open && lb.imgCtrl === ctrl) lb.refresh();
+        loading = false;
+      };
+      pre.onerror = () => { loading = false; };
+      pre.src = src(target);
+    }
+
+    front.src = src(0);
+    front.classList.add("active");
+    counter.textContent = "1 / " + files.length;
+
+    frame.addEventListener("click", e => {
+      if (e.target.closest(".s-prev")) { show(idx - 1); return; }
+      if (e.target.closest(".s-next")) { show(idx + 1); return; }
+      lb.openImage(ctrl);
+    });
+    frame.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); lb.openImage(ctrl); }
+    });
+
+    /* 카드 위 스와이프로 사진 넘기기 */
+    let touchX = null;
+    frame.addEventListener("touchstart", e => { touchX = e.touches[0].clientX; }, { passive:true });
+    frame.addEventListener("touchend", e => {
+      if (touchX == null) return;
+      const dx = e.changedTouches[0].clientX - touchX;
+      if (Math.abs(dx) > 45) show(idx + (dx > 0 ? -1 : 1));
+      touchX = null;
+    }, { passive:true });
+
+    const ctrl = {
+      el: card, label,
+      get idx(){ return idx; },
+      get length(){ return files.length; },
+      currentSrc: () => src(idx),
+      step: d => show(idx + d),
+      setActive: v => { active = v; },
+      tick(){ if (active && !lb.open && !document.hidden) show(idx + 1); }
+    };
+    return ctrl;
+  }
+
+  /* 화면 가운데(55% 이상 보임)에 있는 카드만 자동 재생 */
+  const dayObserver = ("IntersectionObserver" in window)
+    ? new IntersectionObserver(entries => {
+        entries.forEach(en => {
+          const c = controllers.find(x => x.el === en.target || x.el.contains(en.target));
+          if (c) c.setActive(en.isIntersecting);
+        });
+      }, { threshold: .55 })
+    : null;
+
+  setInterval(() => controllers.forEach(c => c.tick()), SLIDE_MS);
+
+  /* ══════════════ 비디오 카드 ══════════════ */
+  const playIcon =
+    '<span class="play" aria-hidden="true">' +
+    '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>';
+
+  function classLabel(fileName){
+    /* "TaeKwonDo-Kpop_IMG_8776.mp4" → "TaeKwonDo Kpop" */
+    const p = fileName.split("_")[0] || "Camp";
+    return p.replace(/-/g, " ");
+  }
+
+  function buildVideos(year){
+    const gal = document.getElementById("videoGallery");
+    gal.innerHTML = "";
+    const list = arr(yearData(year).videos).filter(f => VID_EXT.test(f));
+
+    if (!list.length){
+      gal.innerHTML = '<p class="video-empty">Coming Soon</p>';
+      return;
+    }
+
+    list.forEach((f, i) => {
+      const srcPath = year + "/videos/" + encodeURIComponent(f);
+      const vcard = document.createElement("button");
+      vcard.className = "vcard";
+      vcard.setAttribute("aria-label", classLabel(f) + " 영상 " + (i + 1) + " 재생");
+      vcard.innerHTML =
+        '<div class="thumb">' +
+          '<video preload="metadata" muted playsinline src="' + srcPath + '#t=0.1"></video>' +
+          playIcon +
+          '<span class="vlabel">' + classLabel(f) + '</span>' +
+        '</div>';
+      vcard.addEventListener("click", () => lb.openVideo(srcPath));
+      gal.appendChild(vcard);
+    });
+  }
+
+  /* ══════════════ 연도 토글 + 전체 빌드 ══════════════ */
+  function buildYearToggle(){
+    const wrap = document.getElementById("yearToggle");
+    wrap.innerHTML = "";
+    pillYears.forEach(y => {
+      const b = document.createElement("button");
+      b.textContent = y;
+      b.className = (y === curYear) ? "on" : "";
+      b.addEventListener("click", () => {
+        if (curYear === y) return;
+        curYear = y;
+        rebuild();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+      wrap.appendChild(b);
+    });
+  }
+
+  function rebuild(){
+    buildYearToggle();
+    document.getElementById("campEyebrow").textContent = curYear + " Summer Camp";
+
+    const days = document.getElementById("days");
+    days.innerHTML = "";
+    if (dayObserver) dayObserver.disconnect();
+    controllers = DAY_KEYS.map(k => createDayCard(curYear, k));
+    controllers.forEach(c => {
+      days.appendChild(c.el);
+      if (dayObserver) c.el.querySelector(".slide-frame") && dayObserver.observe(c.el);
+      else c.setActive(true);   /* 옵저버 미지원 브라우저: 전부 자동 재생 */
+    });
+
+    buildVideos(curYear);
+  }
+
+  if (!Object.keys(FILES).length){
+    document.getElementById("days").innerHTML =
+      '<p class="video-empty">files.js 를 찾을 수 없습니다 — generate-files.ps1 을 실행해 주세요.</p>';
+  }
+  rebuild();
+</script>
+
+</body>
+</html>
