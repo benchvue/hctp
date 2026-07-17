@@ -328,7 +328,8 @@
   .thumb-fallback{
     position: absolute; inset: 0;
     display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 8px;
+    align-items: center; justify-content: flex-start;
+    padding-top: 12%;
     background:
       radial-gradient(400px 200px at 50% 0%, rgba(201,164,92,.12), transparent 70%),
       var(--bg-soft);
@@ -337,15 +338,9 @@
   .thumb-fallback span{
     font-family: 'Cormorant Garamond', serif;
     font-style: italic;
-    font-size: 26px;
+    font-size: 24px;
     letter-spacing: .18em;
     color: var(--gold);
-  }
-  .thumb-fallback small{
-    font-size: 10px;
-    letter-spacing: .3em; text-indent: .3em;
-    text-transform: uppercase;
-    color: var(--muted);
   }
   .video-empty{
     grid-column: 1 / -1;
@@ -725,37 +720,28 @@
     }
 
     list.forEach((f, i) => {
-      const srcPath = year + "/videos/" + encodeURIComponent(f);
+      const srcPath   = year + "/videos/" + encodeURIComponent(f);
+      const thumbPath = year + "/videos/thumbs/" +
+                        encodeURIComponent(f.replace(/\.mp4$/i, "") + ".webp");
       const vcard = document.createElement("button");
       vcard.className = "vcard";
       vcard.setAttribute("aria-label", classLabel(f) + " 영상 " + (i + 1) + " 재생");
       vcard.innerHTML =
         '<div class="thumb">' +
-          '<video preload="metadata" muted playsinline></video>' +
+          '<img loading="lazy" decoding="async" alt="' + classLabel(f) + ' 영상 미리보기">' +
           playIcon +
           '<span class="vlabel">' + classLabel(f) + '</span>' +
         '</div>';
 
-      const v = vcard.querySelector("video");
-
-      /* 메타데이터가 로드되면 1.5초(짧은 영상은 중간) 지점으로 이동해
-         실제 프레임을 강제로 그리게 함 — 첫 프레임이 검거나
-         #t 프래그먼트를 무시하는 브라우저에서도 썸네일이 보임 */
-      v.addEventListener("loadedmetadata", () => {
-        const d = v.duration;
-        const t = (isFinite(d) && d > 0) ? Math.min(1.5, d / 2) : 0.5;
-        try { v.currentTime = t; } catch (e) {}
-      }, { once: true });
-
-      /* 재생 불가(코덱 미지원 등) 영상은 검은 화면 대신 안내 카드 표시 */
-      v.addEventListener("error", () => {
+      /* 썸네일 이미지가 없으면(생성 실패 등) 안내 카드로 대체 */
+      const im = vcard.querySelector("img");
+      im.addEventListener("error", () => {
         const fb = document.createElement("div");
         fb.className = "thumb-fallback";
-        fb.innerHTML = "<span>Video</span><small>tap to try playing</small>";
-        v.replaceWith(fb);
+        fb.innerHTML = "<span>Video</span>";
+        im.replaceWith(fb);
       }, { once: true });
-
-      v.src = srcPath;
+      im.src = thumbPath;
 
       vcard.addEventListener("click", () => lb.openVideo(srcPath));
       gal.appendChild(vcard);
