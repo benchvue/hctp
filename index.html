@@ -325,6 +325,28 @@
   }
   .vcard:focus-visible .thumb,
   .slide-frame:focus-visible{ outline: 2px solid var(--gold); outline-offset: 8px; }
+  .thumb-fallback{
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 8px;
+    background:
+      radial-gradient(400px 200px at 50% 0%, rgba(201,164,92,.12), transparent 70%),
+      var(--bg-soft);
+    pointer-events: none;
+  }
+  .thumb-fallback span{
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 26px;
+    letter-spacing: .18em;
+    color: var(--gold);
+  }
+  .thumb-fallback small{
+    font-size: 10px;
+    letter-spacing: .3em; text-indent: .3em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
   .video-empty{
     grid-column: 1 / -1;
     text-align:center;
@@ -491,6 +513,15 @@
   const arr = v => v == null ? [] : (Array.isArray(v) ? v : [v]);
   const yearData = y => FILES[y] || {};
 
+  /* Fisher-Yates 셔플 — 페이지를 열 때마다(세션마다) 순서가 새로 섞임 */
+  function shuffle(a){
+    for (let i = a.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      const t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
   /* ── 연도 자동 선택: 매년 8/24 이후에는 그 해, 이전에는 전년도 ── */
   const now = new Date();
   const cutoff = new Date(now.getFullYear(), 7, 24);            /* 8월 24일 */
@@ -570,7 +601,7 @@
 
   function createDayCard(year, key){
     const label = DAY_LABELS[key] || key;
-    const files = arr(yearData(year)[key]).filter(f => IMG_EXT.test(f));
+    const files = shuffle(arr(yearData(year)[key]).filter(f => IMG_EXT.test(f)));
 
     const card  = document.createElement("section");
     card.className = "day-card";
@@ -686,7 +717,7 @@
   function buildVideos(year){
     const gal = document.getElementById("videoGallery");
     gal.innerHTML = "";
-    const list = arr(yearData(year).videos).filter(f => VID_EXT.test(f));
+    const list = shuffle(arr(yearData(year).videos).filter(f => VID_EXT.test(f)));
 
     if (!list.length){
       gal.innerHTML = '<p class="video-empty">Coming Soon</p>';
@@ -700,10 +731,32 @@
       vcard.setAttribute("aria-label", classLabel(f) + " 영상 " + (i + 1) + " 재생");
       vcard.innerHTML =
         '<div class="thumb">' +
-          '<video preload="metadata" muted playsinline src="' + srcPath + '#t=0.1"></video>' +
+          '<video preload="metadata" muted playsinline></video>' +
           playIcon +
           '<span class="vlabel">' + classLabel(f) + '</span>' +
         '</div>';
+
+      const v = vcard.querySelector("video");
+
+      /* 메타데이터가 로드되면 1.5초(짧은 영상은 중간) 지점으로 이동해
+         실제 프레임을 강제로 그리게 함 — 첫 프레임이 검거나
+         #t 프래그먼트를 무시하는 브라우저에서도 썸네일이 보임 */
+      v.addEventListener("loadedmetadata", () => {
+        const d = v.duration;
+        const t = (isFinite(d) && d > 0) ? Math.min(1.5, d / 2) : 0.5;
+        try { v.currentTime = t; } catch (e) {}
+      }, { once: true });
+
+      /* 재생 불가(코덱 미지원 등) 영상은 검은 화면 대신 안내 카드 표시 */
+      v.addEventListener("error", () => {
+        const fb = document.createElement("div");
+        fb.className = "thumb-fallback";
+        fb.innerHTML = "<span>Video</span><small>tap to try playing</small>";
+        v.replaceWith(fb);
+      }, { once: true });
+
+      v.src = srcPath;
+
       vcard.addEventListener("click", () => lb.openVideo(srcPath));
       gal.appendChild(vcard);
     });
