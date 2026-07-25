@@ -351,6 +351,26 @@
     padding: 30px 0;
   }
 
+  /* ── 배경음악 버튼 ───────────────────── */
+  .bgm-btn{
+    position: fixed; right: 16px; bottom: 16px; z-index: 90;
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    border: 1px solid var(--gold-dim);
+    background: rgba(19,16,17,.82);
+    backdrop-filter: blur(6px);
+    color: var(--gold);
+    cursor: pointer;
+    display: grid; place-items: center;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,.85);
+    transition: color .25s ease, background .25s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bgm-btn svg{ width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .bgm-btn .slash{ display:none; }
+  .bgm-btn.off{ color: var(--muted); }
+  .bgm-btn.off .slash{ display:block; }
+
   footer{
     text-align: center;
     padding: 0 20px 64px;
@@ -478,6 +498,16 @@
   ALL RIGHTS RESERVED
 </footer>
 
+<!-- 배경음악 토글 버튼 -->
+<button class="bgm-btn" id="bgmBtn" aria-label="배경음악 켜기/끄기">
+  <svg viewBox="0 0 24 24">
+    <path d="M9 18V5l12-2v13"/>
+    <circle cx="6" cy="18" r="3"/>
+    <circle cx="18" cy="16" r="3"/>
+    <line class="slash" x1="4" y1="4" x2="20" y2="20"/>
+  </svg>
+</button>
+
 <!-- 라이트박스 -->
 <div class="lightbox" id="lightbox">
   <button class="close-btn" id="closeBtn" aria-label="닫기">✕</button>
@@ -517,6 +547,106 @@
     return a;
   }
 
+  /* ══════════════ 배경음악 (BGM) ══════════════
+     - audio/ 폴더의 곡을 랜덤 순서로 재생, 한 곡이 끝나면 다음 곡
+     - 모든 곡을 다 들으면 다시 랜덤으로 섞어서 계속 재생
+     - 비디오 재생 중에는 일시정지, 비디오가 끝나거나 닫으면 이어서 재생
+     - 2025 / 2026 등 모든 연도에서 같은 audio/ 폴더 사용
+     - 곡을 추가하면 아래 목록에 파일명만 넣으면 됩니다 */
+  const AUDIO_PATH = "audio/";
+  const AUDIO_FILES = [
+    "alexzavesa-dance-playful-night-510786.mp3",
+    "artmylife-powerful-dramatic-trailer-514242.mp3",
+    "bombinsound-background-music-560453.mp3",
+    "fassounds-escape-your-love-upbeat-fashion-pop-dance-412230.mp3",
+    "grand_project-wonders-of-the-earth-550792.mp3",
+    "gvidon-gvidon-medicine-364031.mp3",
+    "ikoliks_aj-background-music-320427.mp3",
+    "ikoliks_aj-background-music-432715.mp3",
+    "kontraa-water-afro-pop-music-445661.mp3",
+    "mfcc-background-music-274290.mp3",
+    "mixkit-a-very-happy-christmas-897.mp3",
+    "sigmamusicart-background-music-inspiring-525840.mp3"
+  ];
+
+  const bgm = {
+    el: new Audio(),
+    queue: [], pos: -1,
+    enabled: true,          /* 사용자가 버튼으로 끄면 false */
+    started: false,         /* 첫 터치 후 재생 시작 여부 */
+    pausedByVideo: false,   /* 비디오 때문에 멈춘 상태 */
+    errors: 0,
+    next(){
+      this.pos++;
+      if (!this.queue.length || this.pos >= this.queue.length){
+        this.queue = shuffle(AUDIO_FILES.slice());   /* 전곡 재생 후 다시 랜덤 셔플 */
+        this.pos = 0;
+      }
+      this.el.src = AUDIO_PATH + encodeURIComponent(this.queue[this.pos]);
+      this.el.play().catch(function(){});
+    },
+    start(){
+      if (this.started){
+        if (this.enabled && this.el.paused && !this.pausedByVideo)
+          this.el.play().catch(function(){});
+        return;
+      }
+      this.started = true;
+      this.next();
+    },
+    pauseForVideo(){
+      if (!this.el.paused){
+        this.el.pause();
+        this.pausedByVideo = true;
+      }
+    },
+    resumeAfterVideo(){
+      if (this.pausedByVideo){
+        this.pausedByVideo = false;
+        if (this.enabled) this.el.play().catch(function(){});
+      }
+    }
+  };
+  bgm.el.volume = 0.65;
+  bgm.el.addEventListener("ended", () => {
+    bgm.errors = 0;
+    if (bgm.enabled && !bgm.pausedByVideo) bgm.next();
+  });
+  bgm.el.addEventListener("error", () => {
+    /* 파일이 없거나 로드 실패한 곡은 건너뜀 (전곡 실패 시 중단) */
+    if (++bgm.errors < AUDIO_FILES.length && bgm.enabled) bgm.next();
+  });
+
+/* 페이지 로드 시 자동재생 시도 — 허용된 환경(자주 방문한 데스크톱 등)에선 바로 재생됨.
+     차단된 환경에선 첫 터치/클릭/스크롤 순간 즉시 시작 */
+  const kickBgm = () => { if (bgm.enabled) bgm.start(); };
+  window.addEventListener("load", () => {
+    if (!bgm.enabled) return;
+    bgm.queue = shuffle(AUDIO_FILES.slice());
+    bgm.pos = 0;
+    bgm.el.src = AUDIO_PATH + encodeURIComponent(bgm.queue[0]);
+    bgm.el.play()
+      .then(() => { bgm.started = true; })          /* 자동재생 성공 */
+      .catch(() => { /* 차단됨 - 첫 상호작용을 기다림 */ });
+  });
+  document.addEventListener("pointerdown", kickBgm, { once: true });
+  document.addEventListener("touchstart",  kickBgm, { once: true });
+  document.addEventListener("scroll",      kickBgm, { once: true, passive: true });
+
+  const bgmBtn = document.getElementById("bgmBtn");
+  bgmBtn.addEventListener("click", e => {
+    e.stopPropagation();
+    if (bgm.enabled){
+      bgm.enabled = false;
+      bgm.el.pause();
+    } else {
+      bgm.enabled = true;
+      bgm.pausedByVideo = false;
+      bgm.start();
+    }
+    bgmBtn.classList.toggle("off", !bgm.enabled);
+  });
+
   /* ── 연도 자동 선택: 매년 8/24 이후에는 그 해, 이전에는 전년도 ── */
   const now = new Date();
   const cutoff = new Date(now.getFullYear(), 7, 24);            /* 8월 24일 */
@@ -551,6 +681,7 @@
     openVideo(src){
       this.imgCtrl = null;
       this.open = true;
+      bgm.pauseForVideo();                 /* 비디오 재생 동안 배경음악 일시정지 */
       lbImg.classList.remove("active");
       lightbox.classList.remove("img-mode");
       lightbox.classList.add("open");
@@ -568,9 +699,14 @@
       lbVideo.classList.remove("active");
       lbImg.classList.remove("active");
       lbImg.removeAttribute("src");
+      bgm.resumeAfterVideo();              /* 끊겼던 배경음악 이어서 재생 */
     }
   };
   document.getElementById("closeBtn").addEventListener("click", () => lb.close());
+  /* 영상이 끝까지 재생되면 라이트박스를 닫기 전이라도 음악 재개,
+     컨트롤로 영상을 다시 재생하면 음악 다시 일시정지 */
+  lbVideo.addEventListener("ended", () => bgm.resumeAfterVideo());
+  lbVideo.addEventListener("play",  () => bgm.pauseForVideo());
   lightbox.addEventListener("click", e => { if (e.target === lightbox) lb.close(); });
   document.addEventListener("keydown", e => {
     if (!lb.open) return;
