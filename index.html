@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -60,6 +60,19 @@
     background: linear-gradient(90deg, transparent, var(--gold), transparent);
     margin: 26px auto 0;
   }
+
+  /* 로고 */
+  .logo-chip{
+    display: inline-block;
+    margin-top: 22px;
+    background: rgba(242,236,226,.96);
+    border-radius: 18px;
+    padding: 16px 24px;
+    box-shadow:
+      0 0 0 1px rgba(201,164,92,.4),
+      0 18px 44px -16px rgba(0,0,0,.8);
+  }
+  .logo-chip img{ display: block; width: min(340px, 72vw); height: auto; }
 
   /* 연도 선택 */
   .year-toggle{
@@ -454,9 +467,13 @@
 
 <header>
   <p class="eyebrow">Hanaim Community Tutorial Program</p>
-  <h1>HCTP</h1>
-  <p class="tagline">서머 캠프의 순간들 · Summer Camp Memories</p>
-  <div class="year-toggle" id="yearToggle" role="group" aria-label="연도 선택"></div>
+  <div class="logo-chip">
+    <img src="logo.png" alt="HCTP — Hanaim Community Tutorial Program"
+         onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://images.squarespace-cdn.com/content/v1/626092d011af024c5f0cadd1/92a00eee-d461-4847-ad26-a0ae4c5abec8/HCTP-LOGO-LAND-03.png?format=1500w';}else{this.closest('.logo-chip').style.display='none';document.getElementById('logoFallback').style.display='block';}">
+  </div>
+  <h1 id="logoFallback" style="display:none">HCTP</h1>
+  <p class="tagline">Summer Camp Memories</p>
+  <div class="year-toggle" id="yearToggle" role="group" aria-label="Select year"></div>
   <div class="rule"></div>
 </header>
 
@@ -481,15 +498,15 @@
 <div class="section-head">
   <p class="section-eyebrow" id="campEyebrow">Summer Camp</p>
   <h2 class="section-title">Camp Days</h2>
-  <p class="section-sub">카드가 화면 가운데 오면 3초마다 사진이 자동으로 바뀝니다<br>
-  좌우 화살표로 넘기고 · 사진을 탭하면 크게 볼 수 있어요</p>
+  <p class="section-sub">Photos change every 3 seconds while a card is on screen<br>
+  swipe or use the arrows · tap a photo to enlarge</p>
 </div>
 <main class="days" id="days"></main>
 
 <!-- ══════════ 캠프 영상 ══════════ -->
 <div class="section-head">
   <h2 class="section-title">Camp Videos</h2>
-  <p class="section-sub">탭하면 재생 · 전체화면 버튼이나 폰을 가로로 돌리면 크게 볼 수 있어요</p>
+  <p class="section-sub">Tap to play · use the fullscreen button or rotate your phone for a bigger view</p>
 </div>
 <section class="video-gallery" id="videoGallery"></section>
 
@@ -499,7 +516,7 @@
 </footer>
 
 <!-- 배경음악 토글 버튼 -->
-<button class="bgm-btn" id="bgmBtn" aria-label="배경음악 켜기/끄기">
+<button class="bgm-btn" id="bgmBtn" aria-label="Toggle background music">
   <svg viewBox="0 0 24 24">
     <path d="M9 18V5l12-2v13"/>
     <circle cx="6" cy="18" r="3"/>
@@ -510,15 +527,15 @@
 
 <!-- 라이트박스 -->
 <div class="lightbox" id="lightbox">
-  <button class="close-btn" id="closeBtn" aria-label="닫기">✕</button>
-  <button class="lb-arrow lb-prev" id="lbPrev" aria-label="이전 사진">
+  <button class="close-btn" id="closeBtn" aria-label="Close">✕</button>
+  <button class="lb-arrow lb-prev" id="lbPrev" aria-label="Previous photo">
     <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
   </button>
-  <button class="lb-arrow lb-next" id="lbNext" aria-label="다음 사진">
+  <button class="lb-arrow lb-next" id="lbNext" aria-label="Next photo">
     <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
   </button>
   <video id="lbVideo" controls playsinline></video>
-  <img id="lbImg" alt="캠프 사진 크게 보기">
+  <img id="lbImg" alt="Enlarged camp photo">
   <p class="lb-caption" id="lbCaption"></p>
 </div>
 
@@ -617,21 +634,10 @@
     if (++bgm.errors < AUDIO_FILES.length && bgm.enabled) bgm.next();
   });
 
-/* 페이지 로드 시 자동재생 시도 — 허용된 환경(자주 방문한 데스크톱 등)에선 바로 재생됨.
-     차단된 환경에선 첫 터치/클릭/스크롤 순간 즉시 시작 */
+  /* 브라우저 자동재생 정책 때문에 첫 터치/클릭 때 음악 시작 */
   const kickBgm = () => { if (bgm.enabled) bgm.start(); };
-  window.addEventListener("load", () => {
-    if (!bgm.enabled) return;
-    bgm.queue = shuffle(AUDIO_FILES.slice());
-    bgm.pos = 0;
-    bgm.el.src = AUDIO_PATH + encodeURIComponent(bgm.queue[0]);
-    bgm.el.play()
-      .then(() => { bgm.started = true; })          /* 자동재생 성공 */
-      .catch(() => { /* 차단됨 - 첫 상호작용을 기다림 */ });
-  });
   document.addEventListener("pointerdown", kickBgm, { once: true });
   document.addEventListener("touchstart",  kickBgm, { once: true });
-  document.addEventListener("scroll",      kickBgm, { once: true, passive: true });
 
   const bgmBtn = document.getElementById("bgmBtn");
   bgmBtn.addEventListener("click", e => {
@@ -652,9 +658,9 @@
   const cutoff = new Date(now.getFullYear(), 7, 24);            /* 8월 24일 */
   let defYear = String(now >= cutoff ? now.getFullYear() : now.getFullYear() - 1);
 
-  let pillYears = [...new Set([...Object.keys(FILES), defYear])].sort();
+  let pillYears = [...new Set([...Object.keys(FILES), defYear])].sort().reverse();   /* newest year first */
   if (!pillYears.length) pillYears = ["2025"];
-  if (!pillYears.includes(defYear)) defYear = pillYears[pillYears.length - 1];
+  if (!pillYears.includes(defYear)) defYear = pillYears[0];
   let curYear = defYear;
 
   /* ══════════════ 라이트박스 ══════════════ */
@@ -740,7 +746,7 @@
     frame.className = "slide-frame";
     frame.setAttribute("tabindex", "0");
     frame.setAttribute("role", "button");
-    frame.setAttribute("aria-label", label + " 사진 크게 보기");
+    frame.setAttribute("aria-label", "View " + label + " photos");
     card.appendChild(frame);
 
     /* 사진이 아직 없는 연도 (예: 2026 준비 전) */
@@ -754,15 +760,15 @@
 
     const imgA = new Image(), imgB = new Image();
     imgA.className = imgB.className = "slide";
-    imgA.alt = imgB.alt = label + " 캠프 사진";
+    imgA.alt = imgB.alt = label + " camp photo";
     imgA.decoding = imgB.decoding = "async";
     frame.append(imgA, imgB);
     frame.insertAdjacentHTML("beforeend",
       '<span class="day-tag">' + label + '</span>' +
       '<span class="slide-counter"></span>' +
       '<span class="slide-hint">Tap to enlarge</span>' +
-      '<button class="s-arrow s-prev" aria-label="이전 사진"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>' +
-      '<button class="s-arrow s-next" aria-label="다음 사진"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>');
+      '<button class="s-arrow s-prev" aria-label="Previous photo"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>' +
+      '<button class="s-arrow s-next" aria-label="Next photo"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>');
     const counter = frame.querySelector(".slide-counter");
 
     let idx = 0, front = imgA, back = imgB, active = false, loading = false;
@@ -861,10 +867,10 @@
                         encodeURIComponent(f.replace(/\.mp4$/i, "") + ".webp");
       const vcard = document.createElement("button");
       vcard.className = "vcard";
-      vcard.setAttribute("aria-label", classLabel(f) + " 영상 " + (i + 1) + " 재생");
+      vcard.setAttribute("aria-label", "Play " + classLabel(f) + " video " + (i + 1));
       vcard.innerHTML =
         '<div class="thumb">' +
-          '<img loading="lazy" decoding="async" alt="' + classLabel(f) + ' 영상 미리보기">' +
+          '<img loading="lazy" decoding="async" alt="' + classLabel(f) + ' video preview">' +
           playIcon +
           '<span class="vlabel">' + classLabel(f) + '</span>' +
         '</div>';
@@ -921,7 +927,7 @@
 
   if (!Object.keys(FILES).length){
     document.getElementById("days").innerHTML =
-      '<p class="video-empty">files.js 를 찾을 수 없습니다 — generate-files.ps1 을 실행해 주세요.</p>';
+      '<p class="video-empty">files.js not found — please run generate-files.ps1.</p>';
   }
   rebuild();
 </script>
