@@ -689,7 +689,11 @@
                               "jongbin-2.webp",
                               "jongbin-3.webp",
                               "jongbin-4.webp",
-                              "jongbin-5.webp"
+                              "jongbin-5.webp",
+                              "mihee-1.webp",
+                              "mihee-2.webp",
+                              "mihee-4.webp",
+                              "mihee-5.webp"
                           ],
                  "day2":  [
                               "jongbin-1.webp",
