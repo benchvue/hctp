@@ -1,15 +1,15 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>HCTP Upload — 2026 Summer Camp</title>
+<title>HCTP Upload â€” 2026 Summer Camp</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
-  /* ── WHITE THEME ── */
+  /* â”€â”€ WHITE THEME â”€â”€ */
   :root{
     --paper:#f7f4ec; --card:#ffffff; --ink:#2a251d;
     --gold:#a9812f; --gold-soft:#c9a45c; --gold-bg:#f4ead2;
@@ -87,7 +87,7 @@
   .pimg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;cursor:zoom-in}
   .pimg .owner{position:absolute;left:6px;bottom:6px;background:rgba(42,37,29,.78);color:#f2e6c8;
     font-size:10px;border-radius:20px;padding:2px 8px;pointer-events:none}
-  .pimg.vid::after{content:"▶";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  .pimg.vid::after{content:"â–¶";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
     width:34px;height:34px;border-radius:50%;background:rgba(42,37,29,.65);border:1px solid #fff;
     color:#fff;display:grid;place-items:center;font-size:13px;padding-left:3px;pointer-events:none}
   .pname{font-size:10.5px;color:var(--muted);text-align:center;margin-top:6px;word-break:break-all}
@@ -111,20 +111,20 @@
 </head>
 <body>
 
-<!-- ── lock screen ── -->
+<!-- â”€â”€ lock screen â”€â”€ -->
 <div class="lock" id="lockScreen">
   <div class="lock-card card">
-    <div style="font-size:32px">🏕️🔒</div>
-    <div class="lock-title">HCTP Upload · 2026</div>
+    <div style="font-size:32px">ðŸ•ï¸ðŸ”’</div>
+    <div class="lock-title">HCTP Upload Â· 2026</div>
     <div class="lock-sub">Teachers only.<br>
       Sign in with your registered Google account.<br>
       Please check the <b>Google Drive</b> box on the consent screen.</div>
-    <button class="gsign" id="signInBtn">G · Sign in with Google</button>
+    <button class="gsign" id="signInBtn">G Â· Sign in with Google</button>
     <div class="denied" id="deniedMsg">This account is not registered as a teacher.</div>
   </div>
 </div>
 
-<!-- ── main panel ── -->
+<!-- â”€â”€ main panel â”€â”€ -->
 <div class="panel" id="panel">
   <div class="topbar card">
     <div>
@@ -133,7 +133,7 @@
     </div>
     <div class="actions">
       <a class="mini" href="index.html">View Site</a>
-      <button class="mini" id="refreshBtn">↻ Refresh</button>
+      <button class="mini" id="refreshBtn">â†» Refresh</button>
       <button class="mini" id="signOutBtn">Sign out</button>
     </div>
   </div>
@@ -142,41 +142,41 @@
   <div class="quota card" id="quotaBox"></div>
 
   <!-- upload photos -->
-  <h2 class="sec">Upload Photos <small>· jpg / png / heic → auto-converted to WebP (max 1600px) · <b>5 per day</b></small></h2>
+  <h2 class="sec">Upload Photos <small>Â· jpg / png / heic â†’ auto-converted to WebP (max 1600px) Â· <b>5 per day</b></small></h2>
   <div class="upwrap card" id="photoUpBox">
     <div class="day-pills" id="dayPills"></div>
-    <button class="upl-btn" id="photoBtn">＋ Choose photos to upload</button>
+    <button class="upl-btn" id="photoBtn">ï¼‹ Choose photos to upload</button>
     <input type="file" id="photoInput" accept="image/*" multiple hidden>
     <div class="status" id="photoStatus"></div>
-    <div class="hintline">Files are renamed automatically per day: <b>yourname-1.webp, yourname-2.webp …</b></div>
+    <div class="hintline">Files are renamed automatically per day: <b>yourname-1.webp, yourname-2.webp â€¦</b></div>
   </div>
 
   <!-- upload videos -->
-  <h2 class="sec">Upload Videos <small>· mp4 / mov — saved to the "video" folder</small></h2>
+  <h2 class="sec">Upload Videos <small>Â· mp4 / mov â€” saved to the "video" folder</small></h2>
   <div class="upwrap card" id="videoUpBox">
-    <button class="upl-btn" id="videoBtn">＋ Choose videos to upload</button>
+    <button class="upl-btn" id="videoBtn">ï¼‹ Choose videos to upload</button>
     <input type="file" id="videoInput" accept="video/*" multiple hidden>
     <div class="status" id="videoStatus"></div>
-    <div class="hintline">Renamed automatically: <b>yourname-1.mp4 …</b> H.264 mp4 plays best on all phones.</div>
+    <div class="hintline">Renamed automatically: <b>yourname-1.mp4 â€¦</b> H.264 mp4 plays best on all phones.</div>
   </div>
 
   <!-- teacher summary -->
-  <h2 class="sec">All Teachers <small>· counts only</small></h2>
+  <h2 class="sec">All Teachers <small>Â· counts only</small></h2>
   <div class="card" style="overflow-x:auto"><table class="tt" id="teacherTable"></table></div>
 
   <!-- my / all files -->
   <h2 class="sec" id="filesTitle">My Photos</h2>
   <div id="photoRoot"></div>
 
-  <h2 class="sec" id="videosTitle">My Videos <small>· first uploaded, first shown</small></h2>
+  <h2 class="sec" id="videosTitle">My Videos <small>Â· first uploaded, first shown</small></h2>
   <div id="videoRoot"></div>
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="lb" id="lb"><button class="x" id="lbX">✕</button><img id="lbImg" alt="preview"></div>
+<div class="lb" id="lb"><button class="x" id="lbX">âœ•</button><img id="lbImg" alt="preview"></div>
 
 <script>
-/* ══════════════ CONFIG ══════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â• CONFIG â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 const CONFIG = {
   clientId: "1075824030904-483gk6d1pa361u0ink9v55o0m572rnej.apps.googleusercontent.com",
 
@@ -201,13 +201,13 @@ const CONFIG = {
     { name:"Ellen Lee",         first:"ellen",     email:"sjsend@hotmail.com",   photoMax:0,  videoMax:0,
       note:"uploads via Kyungchul (couple quota)" },
     { name:"Jongbin Ym",        first:"jongbin",   email:"benchvue101@gmail.com",photoMax:5,  videoMax:5  },
-    { name:"Mihee Kang",        first:"mihee",     email:"mihekang@hotmail.com", photoMax:5,  videoMax:5  },
+    { name:"Mihee Kang",        first:"mihee",     email:"mihekang@gmail.com", photoMax:5,  videoMax:5  },
     { name:"Kyungchul Lee",     first:"kyungchul", email:"kcsend@gmail.com",     photoMax:10, videoMax:10,
       note:"couple quota with Ellen (10 per day / 10 videos)" }
   ]
 };
 
-/* ══════════════ state ══════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â• state â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 let accessToken=null, myEmail="", me=null, isSuper=false, tokenClient=null;
 let folderIds={};            /* name -> id (day1..day5, video, db) */
 let dbFileId=null;
@@ -215,11 +215,11 @@ let db={uploads:[]};         /* {fileId,name,type:'photo'|'video',folder,email,t
 let curDay="day1";
 const $=id=>document.getElementById(id);
 const toast=m=>{const t=$("toast");t.textContent=m;t.classList.add("show");
-  clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),/fail|error|⚠|denied|full/i.test(m)?7000:3000);};
+  clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),/fail|error|âš |denied|full/i.test(m)?7000:3000);};
 const teacherByEmail=e=>CONFIG.teachers.find(t=>t.email.toLowerCase()===(e||"").toLowerCase());
 const teacherByFirst=f=>CONFIG.teachers.find(t=>t.first===(f||"").toLowerCase());
 
-/* ══════════════ auth ══════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â• auth â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 const initAuth=()=>{
   tokenClient=google.accounts.oauth2.initTokenClient({
     client_id:CONFIG.clientId,
@@ -228,7 +228,7 @@ const initAuth=()=>{
       if(resp.error){toast("Sign-in failed: "+resp.error);return;}
       if(google.accounts.oauth2.hasGrantedAllScopes&&
          !google.accounts.oauth2.hasGrantedAllScopes(resp,"https://www.googleapis.com/auth/drive")){
-        toast("⚠ Please check the Google Drive box on the consent screen and sign in again.");
+        toast("âš  Please check the Google Drive box on the consent screen and sign in again.");
         setTimeout(()=>tokenClient.requestAccessToken({prompt:"consent"}),1800);return;
       }
       accessToken=resp.access_token;
@@ -239,7 +239,7 @@ const initAuth=()=>{
         if(!me){accessToken=null;$("deniedMsg").style.display="block";return;}
         isSuper=(myEmail===CONFIG.superAdmin.toLowerCase());
         $("lockScreen").style.display="none";$("panel").style.display="block";
-        $("whoAmI").innerHTML="Signed in: <b>"+me.name+"</b> · "+myEmail+(isSuper?" · <b>SUPER ADMIN</b>":"");
+        $("whoAmI").innerHTML="Signed in: <b>"+me.name+"</b> Â· "+myEmail+(isSuper?" Â· <b>SUPER ADMIN</b>":"");
         loadAll();
       }).catch(()=>toast("Could not fetch account info"));
     }
@@ -247,7 +247,7 @@ const initAuth=()=>{
 };
 $("signInBtn").addEventListener("click",()=>{
   if(!tokenClient){ if(window.google&&google.accounts)initAuth();
-    else{toast("Google sign-in still loading… try again in a moment");return;} }
+    else{toast("Google sign-in still loadingâ€¦ try again in a moment");return;} }
   $("deniedMsg").style.display="none";tokenClient.requestAccessToken();
 });
 $("signOutBtn").addEventListener("click",()=>{
@@ -255,14 +255,14 @@ $("signOutBtn").addEventListener("click",()=>{
 $("refreshBtn").addEventListener("click",()=>loadAll());
 window.addEventListener("load",()=>{if(window.google&&google.accounts)initAuth();});
 
-/* ══════════════ Drive helpers ══════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â• Drive helpers â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 const authHeaders=()=>({Authorization:"Bearer "+accessToken});
 const gFetch=(url,opt)=>fetch(url,Object.assign({},opt,{headers:Object.assign({},authHeaders(),(opt&&opt.headers)||{})}))
   .then(r=>{ if(!r.ok) return r.json().catch(()=>({})).then(d=>{
       const msg=(d.error&&d.error.message)||("HTTP "+r.status);
       let hint="";
-      if(r.status===403)hint=" — check that your account is an Editor of the 2026 folder";
-      if(r.status===404)hint=" — folder/file not found";
+      if(r.status===403)hint=" â€” check that your account is an Editor of the 2026 folder";
+      if(r.status===404)hint=" â€” folder/file not found";
       throw new Error(msg+hint);});
     return r.status===204?null:r.json();});
 
@@ -298,7 +298,7 @@ const deleteDriveFile=async(fileId,parentId)=>{
   try{
     await gFetch("https://www.googleapis.com/drive/v3/files/"+fileId,{method:"DELETE"});
   }catch(e){
-    /* not the owner → remove it from the folder instead (super admin case) */
+    /* not the owner â†’ remove it from the folder instead (super admin case) */
     await gFetch("https://www.googleapis.com/drive/v3/files/"+fileId+"?removeParents="+parentId,
       {method:"PATCH",headers:{"Content-Type":"application/json"},body:"{}"});
   }
@@ -315,7 +315,7 @@ const setDriveImg=(img,id,w,link)=>{
   img.src=chain[0];
 };
 
-/* ══════════════ db (JSON file in "db" folder) ══════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â• db (JSON file in "db" folder) â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 const readDb=()=>gFetch("https://www.googleapis.com/drive/v3/files/"+dbFileId+"?alt=media")
   .then(d=>({uploads:Array.isArray(d&&d.uploads)?d.uploads:[]}));
 
@@ -332,10 +332,10 @@ const updateDb=async(mutator)=>{
   db=fresh;
 };
 
-/* ══════════════ load everything ══════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â• load everything â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 async function loadAll(){
   try{
-    toast("Loading…");
+    toast("Loadingâ€¦");
     /* 1. resolve (or create) subfolders */
     const kids=await listChildren(CONFIG.rootFolder," and mimeType='application/vnd.google-apps.folder'");
     folderIds={};
@@ -388,11 +388,11 @@ async function loadAll(){
     driveFiles.forEach(x=>window._driveMeta[x.file.id]=x.file);
 
     renderAll();
-    toast("Loaded ✓");
-  }catch(e){toast("⚠ "+e.message);}
+    toast("Loaded âœ“");
+  }catch(e){toast("âš  "+e.message);}
 }
 
-/* ══════════════ quota helpers (photos are PER DAY) ══════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â• quota helpers (photos are PER DAY) â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 const countPhotosDay=(email,day)=>db.uploads.filter(u=>
   u.email.toLowerCase()===email.toLowerCase()&&u.type==="photo"&&u.folder===day).length;
 const countVideos=(email)=>db.uploads.filter(u=>
@@ -414,12 +414,12 @@ function nextVideoNumber(t){
   return null;
 }
 
-/* ══════════════ photo processing (resize + webp) ══════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â• photo processing (resize + webp) â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 const loadImage=file=>new Promise((res,rej)=>{
   const url=URL.createObjectURL(file);
   const img=new Image();
   img.onload=()=>{URL.revokeObjectURL(url);res(img);};
-  img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error("Cannot read this image on this device — please convert HEIC to JPG first"));};
+  img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error("Cannot read this image on this device â€” please convert HEIC to JPG first"));};
   img.src=url;
 });
 async function toWebp(file){
@@ -435,7 +435,7 @@ async function toWebp(file){
   return{blob:jpg,ext:"jpg",mime:"image/jpeg"};
 }
 
-/* ══════════════ uploads ══════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â• uploads â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 $("photoBtn").addEventListener("click",()=>$("photoInput").click());
 $("videoBtn").addEventListener("click",()=>$("videoInput").click());
 
@@ -448,22 +448,22 @@ $("photoInput").addEventListener("change",async e=>{
     try{
       db=await readDb();                                   /* fresh count every file */
       if(countPhotosDay(me.email,curDay)>=me.photoMax){
-        toast("⚠ "+curDay+" is full ("+me.photoMax+" photos) — other days are still open");break;}
+        toast("âš  "+curDay+" is full ("+me.photoMax+" photos) â€” other days are still open");break;}
       const n=nextPhotoNumber(me,curDay);
-      if(n==null){toast("⚠ "+curDay+" is full ("+me.photoMax+" photos)");break;}
-      $("photoStatus").textContent="Converting "+f.name+" …";
+      if(n==null){toast("âš  "+curDay+" is full ("+me.photoMax+" photos)");break;}
+      $("photoStatus").textContent="Converting "+f.name+" â€¦";
       const w=await toWebp(f);
       const name=me.first+"-"+n+"."+w.ext;
-      $("photoStatus").textContent="Uploading "+name+" to "+curDay+" …";
+      $("photoStatus").textContent="Uploading "+name+" to "+curDay+" â€¦";
       const up=await uploadBlob(name,w.mime,w.blob,folderIds[curDay],
-        p=>$("photoStatus").textContent="Uploading "+name+" … "+Math.round(p*100)+"%");
+        p=>$("photoStatus").textContent="Uploading "+name+" â€¦ "+Math.round(p*100)+"%");
       await updateDb(d=>d.uploads.push({fileId:up.id,name,type:"photo",folder:curDay,email:me.email,ts:Date.now()}));
       done++;
-    }catch(err){toast("⚠ "+f.name+": "+err.message);}
+    }catch(err){toast("âš  "+f.name+": "+err.message);}
   }
   $("photoStatus").textContent="";
   $("photoUpBox").classList.remove("busy");
-  if(done)toast(done+" photo(s) uploaded to "+curDay+" ✓");
+  if(done)toast(done+" photo(s) uploaded to "+curDay+" âœ“");
   renderAll();
 });
 
@@ -475,38 +475,38 @@ $("videoInput").addEventListener("change",async e=>{
   for(const f of files){
     try{
       db=await readDb();
-      if(countVideos(me.email)>=me.videoMax){toast("⚠ Video quota full ("+me.videoMax+")");break;}
+      if(countVideos(me.email)>=me.videoMax){toast("âš  Video quota full ("+me.videoMax+")");break;}
       const n=nextVideoNumber(me);
-      if(n==null){toast("⚠ Video quota full ("+me.videoMax+")");break;}
+      if(n==null){toast("âš  Video quota full ("+me.videoMax+")");break;}
       const name=me.first+"-"+n+".mp4";
-      $("videoStatus").textContent="Uploading "+name+" …";
+      $("videoStatus").textContent="Uploading "+name+" â€¦";
       const up=await uploadBlob(name,f.type||"video/mp4",f,folderIds[CONFIG.videoFolder],
-        p=>$("videoStatus").textContent="Uploading "+name+" … "+Math.round(p*100)+"%");
+        p=>$("videoStatus").textContent="Uploading "+name+" â€¦ "+Math.round(p*100)+"%");
       await updateDb(d=>d.uploads.push({fileId:up.id,name,type:"video",folder:CONFIG.videoFolder,email:me.email,ts:Date.now()}));
       done++;
-    }catch(err){toast("⚠ "+f.name+": "+err.message);}
+    }catch(err){toast("âš  "+f.name+": "+err.message);}
   }
   $("videoStatus").textContent="";
   $("videoUpBox").classList.remove("busy");
-  if(done)toast(done+" video(s) uploaded ✓");
+  if(done)toast(done+" video(s) uploaded âœ“");
   renderAll();
 });
 
-/* ══════════════ delete ══════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â• delete â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 async function removeUpload(u){
   if(!isSuper&&u.email.toLowerCase()!==myEmail)return toast("You can only delete your own files");
   if(!confirm("Delete "+u.name+" ("+u.folder+") ?"))return;
   try{
     await deleteDriveFile(u.fileId,folderIds[u.folder]);
     await updateDb(d=>{d.uploads=d.uploads.filter(x=>x.fileId!==u.fileId);});
-    toast("Deleted "+u.name+" ✓  (a slot is free again)");
+    toast("Deleted "+u.name+" âœ“  (a slot is free again)");
     renderAll();
-  }catch(e){toast("⚠ delete failed: "+e.message);}
+  }catch(e){toast("âš  delete failed: "+e.message);}
 }
 
-/* ══════════════ render ══════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â• render â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 function renderAll(){
-  /* quota box — per-day photo counts + total videos */
+  /* quota box â€” per-day photo counts + total videos */
   const v=countVideos(me.email);
   let q;
   if(me.photoMax===0){
@@ -516,33 +516,33 @@ function renderAll(){
       const c=countPhotosDay(me.email,d);
       return d+" <b"+(c>=me.photoMax?" class='warn'":"")+">"+c+"/"+me.photoMax+"</b>";
     });
-    q="Your photos (max "+me.photoMax+" per day) — "+parts.join(" · ")
-     +"<br>Your videos — <b"+(v>=me.videoMax?" class='warn'":"")+">"+v+" / "+me.videoMax+"</b>";
+    q="Your photos (max "+me.photoMax+" per day) â€” "+parts.join(" Â· ")
+     +"<br>Your videos â€” <b"+(v>=me.videoMax?" class='warn'":"")+">"+v+" / "+me.videoMax+"</b>";
   }
   if(me.note)q+="<br><span style='font-size:12px;color:var(--muted)'>"+me.note+"</span>";
-  if(isSuper)q+="<br><span style='font-size:12px;color:var(--muted)'>Super admin — you can see and delete every file below.</span>";
+  if(isSuper)q+="<br><span style='font-size:12px;color:var(--muted)'>Super admin â€” you can see and delete every file below.</span>";
   $("quotaBox").innerHTML=q;
 
   const canUp=me.photoMax>0;
   const dayFull=canUp&&countPhotosDay(me.email,curDay)>=me.photoMax;
   $("photoBtn").disabled=!canUp||dayFull;                 /* only THIS day being full disables the button */
-  $("photoBtn").textContent=dayFull?("✕ "+curDay+" is full — pick another day"):"＋ Choose photos to upload";
+  $("photoBtn").textContent=dayFull?("âœ• "+curDay+" is full â€” pick another day"):"ï¼‹ Choose photos to upload";
   $("videoBtn").disabled=!canUp||v>=me.videoMax;
   const ps=$("photoStatus");
   ps.classList.toggle("warn",dayFull);
-  ps.textContent=dayFull?(curDay+" already has "+me.photoMax+" of your photos. day2–day5 may still be open — tap another day above."):"";
+  ps.textContent=dayFull?(curDay+" already has "+me.photoMax+" of your photos. day2â€“day5 may still be open â€” tap another day above."):"";
 
   /* day pills with live counts */
   $("dayPills").innerHTML=CONFIG.photoFolders.map(d=>{
     const c=canUp?countPhotosDay(me.email,d):0;
     const full=canUp&&c>=me.photoMax;
     return "<button data-d='"+d+"' class='"+(d===curDay?"on ":"")+(full?"fullday":"")+"'>"
-      +d.toUpperCase()+(canUp?" · "+c+"/"+me.photoMax:"")+"</button>";
+      +d.toUpperCase()+(canUp?" Â· "+c+"/"+me.photoMax:"")+"</button>";
   }).join("");
   [...$("dayPills").children].forEach(b=>b.addEventListener("click",()=>{curDay=b.dataset.d;renderAll();}));
 
   /* teacher table */
-  let rows="<tr><th>Teacher</th><th>Photos per day (d1 · d2 · d3 · d4 · d5)</th><th>Videos</th></tr>";
+  let rows="<tr><th>Teacher</th><th>Photos per day (d1 Â· d2 Â· d3 Â· d4 Â· d5)</th><th>Videos</th></tr>";
   for(const t of CONFIG.teachers){
     const meCls=t.email.toLowerCase()===myEmail?" class='me'":"";
     if(t.photoMax===0){
@@ -553,7 +553,7 @@ function renderAll(){
     const cells=CONFIG.photoFolders.map(d=>{
       const c=countPhotosDay(t.email,d);
       return c>=t.photoMax?"<span class='full'>"+c+"</span>":c;
-    }).join(" · ");
+    }).join(" Â· ");
     const tv=countVideos(t.email);
     rows+="<tr"+meCls+"><td><b>"+t.name+"</b>"
       +(t.note?" <span style='font-size:11px;color:var(--muted)'>("+t.note+")</span>":"")+"</td>"
@@ -565,13 +565,13 @@ function renderAll(){
   /* which uploads do I see in the grids? */
   const visible=isSuper?db.uploads:db.uploads.filter(u=>u.email.toLowerCase()===myEmail);
   $("filesTitle").textContent=isSuper?"All Photos":"My Photos";
-  $("videosTitle").innerHTML=(isSuper?"All Videos":"My Videos")+" <small>· first uploaded, first shown</small>";
+  $("videosTitle").innerHTML=(isSuper?"All Videos":"My Videos")+" <small>Â· first uploaded, first shown</small>";
 
   /* photos grouped by day */
   let ph="";
   for(const d of CONFIG.photoFolders){
     const list=visible.filter(u=>u.type==="photo"&&u.folder===d).sort((a,b)=>a.ts-b.ts);
-    ph+="<h2 class='sec' style='font-size:16px;margin-top:16px'>"+d.toUpperCase()+" <small>· "+list.length+"</small></h2>";
+    ph+="<h2 class='sec' style='font-size:16px;margin-top:16px'>"+d.toUpperCase()+" <small>Â· "+list.length+"</small></h2>";
     ph+=list.length?("<div class='pgrid'>"+list.map(cardHtml).join("")+"</div>")
                    :"<p class='empty-note'>No photos yet.</p>";
   }
@@ -616,3 +616,4 @@ $("lb").addEventListener("click",e=>{if(e.target===$("lb"))$("lb").classList.rem
 </script>
 </body>
 </html>
+
