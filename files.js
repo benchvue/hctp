@@ -716,7 +716,8 @@
                               "jongbin-1.webp",
                               "jongbin-2.webp",
                               "jongbin-3.webp",
-                              "jongbin-4.webp"
+                              "jongbin-4.webp",
+                              "jongbin-5.jpg"
                           ],
                  "videos":  [
                                 "jongbin-1.mp4",
