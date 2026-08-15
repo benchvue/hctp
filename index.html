@@ -653,15 +653,11 @@
     bgmBtn.classList.toggle("off", !bgm.enabled);
   });
 
-  /* ── 연도 자동 선택: 매년 8/24 이후에는 그 해, 이전에는 전년도 ── */
-  const now = new Date();
-  const cutoff = new Date(now.getFullYear(), 7, 24);            /* 8월 24일 */
-  let defYear = String(now >= cutoff ? now.getFullYear() : now.getFullYear() - 1);
-
-  let pillYears = [...new Set([...Object.keys(FILES), defYear])].sort().reverse();   /* newest year first */
-  if (!pillYears.length) pillYears = ["2025"];
-  if (!pillYears.includes(defYear)) defYear = pillYears[0];
-  let curYear = defYear;
+  /* 기본 연도: files.js에 있는 가장 최신 연도 (지금은 2026,
+     내년에 2027 폴더가 생기면 자동으로 2027이 기본이 됨) */
+  let pillYears = Object.keys(FILES).sort().reverse();   /* newest year first */
+  if (!pillYears.length) pillYears = ["2026"];
+  let curYear = pillYears[0];
 
   /* ══════════════ 라이트박스 ══════════════ */
   const lightbox = document.getElementById("lightbox");
