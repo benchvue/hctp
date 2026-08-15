@@ -4,7 +4,7 @@
 
 ## 📸 [**View the Camp Photo Site → benchvue.github.io/hctp**](https://benchvue.github.io/hctp/)
 
-**사진과 영상은 위 링크를 눌러 보세요! (핸드폰에서 잘 보입니다)**
+**Tap the link above to see all camp photos and videos — works great on your phone!**
 
 </div>
 
@@ -23,27 +23,23 @@ gender, religion, or any other characteristics.
 HCTP is part of our effort to serve the communities that we live in,
 particularly children, who are our future.
 
-## How to use the photo site · 사이트 이용 방법
+## How to use the photo site
 
-- Pick a year at the top (**2026 / 2025**) · 상단에서 연도를 선택하세요
+- **Pick a year** at the top (2026 / 2025).
 - Each **Day 1–5** card plays a slideshow — photos change every 3 seconds.
-  Tap a photo to enlarge it. · 카드의 사진은 3초마다 바뀌고, 탭하면 크게 볼 수 있어요
-- In **Camp Videos**, tap a card to play; rotate your phone for full screen.
-  · 영상은 탭해서 재생하고, 폰을 가로로 돌리면 크게 볼 수 있어요
-- Background music starts after your first tap — the ♪ button (bottom-right)
-  turns it off. · 배경음악은 첫 터치 후 시작되고, 오른쪽 아래 음표 버튼으로 끌 수 있어요
+  Swipe or use the arrows, and tap any photo to enlarge it.
+- In **Camp Videos**, tap a card to play. Use the fullscreen button or rotate
+  your phone sideways for a bigger view.
+- Background music starts after your first tap — the ♪ button in the
+  bottom-right corner turns it on or off.
 
-## For teachers · 선생님용
+## For teachers
 
-Teachers upload camp photos and videos here (Google sign-in required):
+Camp teachers can upload photos and videos here (registered Google accounts only):
 
 **[Upload Page → benchvue.github.io/hctp/upload.html](https://benchvue.github.io/hctp/upload.html)**
 
-📖 See **[teacher-guide.md](teacher-guide.md)** for step-by-step instructions.
-
-## For the administrator
-
-Setup, daily sync, and troubleshooting: **[super-admin.md](super-admin.md)**
+Need the how-to guide? Ask the administrator (Jongbin) and he will send it to you.
 
 ---
 
