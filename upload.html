@@ -9,39 +9,43 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
+  /* ── WHITE THEME ── */
   :root{
-    --bg:#131011; --bg-soft:#1c1719; --ink:#f2ece2; --gold:#c9a45c;
-    --gold-dim:#8a7040; --muted:#9b9089; --line:rgba(201,164,92,.35);
-    --ok:#7fbf7f; --err:#e08484; --radius:16px;
+    --paper:#f7f4ec; --card:#ffffff; --ink:#2a251d;
+    --gold:#a9812f; --gold-soft:#c9a45c; --gold-bg:#f4ead2;
+    --muted:#867d6d; --line:#e3dcc9;
+    --ok:#1e7a46; --err:#b4404f; --radius:16px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:radial-gradient(1200px 600px at 50% -200px, rgba(201,164,92,.10), transparent 60%),var(--bg);
-    color:var(--ink);font-family:'Noto Sans KR',sans-serif;font-weight:300;min-height:100vh;font-size:14.5px;line-height:1.6}
+  body{background:var(--paper);color:var(--ink);font-family:'Noto Sans KR',sans-serif;
+    font-weight:300;min-height:100vh;font-size:14.5px;line-height:1.6}
   button{font-family:inherit;cursor:pointer}
-  .card{border:1px solid var(--line);border-radius:var(--radius);background:var(--bg-soft)}
+  .card{border:1px solid var(--line);border-radius:var(--radius);background:var(--card);
+    box-shadow:0 6px 22px -14px rgba(90,70,30,.25)}
 
   /* lock screen */
   .lock{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
   .lock-card{text-align:center;padding:44px 32px;max-width:430px;width:100%}
   .lock-title{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:26px;color:var(--gold);margin-top:10px}
   .lock-sub{margin-top:12px;font-size:13px;color:var(--muted);line-height:1.8}
+  .lock-sub b{color:var(--ink);font-weight:500}
   .gsign{margin-top:24px;display:inline-flex;align-items:center;gap:10px;border:1px solid var(--gold);
-    border-radius:999px;background:var(--gold);color:#131011;padding:12px 26px;font-size:14px;font-weight:500}
-  .gsign:hover{background:transparent;color:var(--gold)}
-  .denied{color:var(--err);margin-top:16px;font-size:13px;display:none}
+    border-radius:999px;background:var(--gold);color:#fff;padding:12px 26px;font-size:14px;font-weight:500}
+  .gsign:hover{background:#fff;color:var(--gold)}
+  .denied{color:var(--err);margin-top:16px;font-size:13px;display:none;font-weight:500}
 
   /* panel */
   .panel{display:none;max-width:1100px;margin:0 auto;padding:20px clamp(12px,3vw,34px) 90px}
   .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
     padding:14px 18px;margin-bottom:16px}
-  .topbar h1{font-family:'Cormorant Garamond',serif;font-size:clamp(18px,4vw,24px);font-weight:400;letter-spacing:.06em}
+  .topbar h1{font-family:'Cormorant Garamond',serif;font-size:clamp(18px,4vw,24px);font-weight:400;letter-spacing:.06em;color:var(--ink)}
   .topbar h1 em{font-style:italic;color:var(--gold)}
   .who{font-size:12px;color:var(--muted)}
   .who b{color:var(--gold);font-weight:500}
   .actions{display:flex;gap:8px;flex-wrap:wrap}
-  .mini{border:1px solid var(--gold-dim);border-radius:999px;background:none;color:var(--gold);
+  .mini{border:1px solid var(--gold);border-radius:999px;background:none;color:var(--gold);
     font-size:12px;padding:7px 14px;text-decoration:none;display:inline-block}
-  .mini:hover{background:var(--gold);color:#131011}
+  .mini:hover{background:var(--gold);color:#fff}
 
   h2.sec{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:400;font-size:21px;
     letter-spacing:.08em;color:var(--gold);margin:26px 0 10px}
@@ -50,55 +54,59 @@
   /* quota + teacher table */
   .quota{padding:16px 18px;font-size:14px}
   .quota b{color:var(--gold);font-weight:500}
-  .quota .warn{color:var(--err)}
+  .quota b.warn,.warn{color:var(--err)}
   table.tt{width:100%;border-collapse:collapse;font-size:13px}
-  table.tt th,table.tt td{padding:9px 12px;text-align:left;border-bottom:1px solid rgba(201,164,92,.15)}
-  table.tt th{color:var(--gold-dim);font-weight:400;font-size:11px;letter-spacing:.18em;text-transform:uppercase}
+  table.tt th,table.tt td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line)}
+  table.tt th{color:var(--muted);font-weight:400;font-size:11px;letter-spacing:.16em;text-transform:uppercase}
   table.tt td b{color:var(--gold);font-weight:500}
-  table.tt tr.me td{background:rgba(201,164,92,.07)}
-  .full{color:var(--err)}
+  table.tt tr.me td{background:var(--gold-bg)}
+  .full{color:var(--err);font-weight:500}
 
   /* upload controls */
   .upwrap{padding:18px;display:grid;gap:14px}
   .day-pills{display:flex;gap:8px;flex-wrap:wrap}
-  .day-pills button{border:1px solid var(--gold-dim);border-radius:999px;background:none;color:var(--gold);
-    font-size:12.5px;padding:7px 16px;letter-spacing:.06em}
-  .day-pills button.on{background:var(--gold);color:#131011;font-weight:500}
-  .upl-btn{display:inline-flex;align-items:center;gap:8px;border:1px dashed var(--gold-dim);border-radius:12px;
-    background:none;color:var(--ink);font-size:13.5px;padding:13px 18px;width:100%;justify-content:center}
+  .day-pills button{border:1px solid var(--gold);border-radius:999px;background:#fff;color:var(--gold);
+    font-size:12.5px;padding:7px 15px;letter-spacing:.05em}
+  .day-pills button.on{background:var(--gold);color:#fff;font-weight:500}
+  .day-pills button.fullday{border-color:#dcc0c4;color:var(--err);background:#fbf3f4}
+  .day-pills button.fullday.on{background:var(--err);color:#fff;border-color:var(--err)}
+  .upl-btn{display:inline-flex;align-items:center;gap:8px;border:2px dashed var(--line);border-radius:12px;
+    background:#fdfcf8;color:var(--ink);font-size:13.5px;padding:13px 18px;width:100%;justify-content:center}
   .upl-btn:hover{border-color:var(--gold);color:var(--gold)}
-  .upl-btn:disabled{opacity:.4;cursor:not-allowed}
+  .upl-btn:disabled{opacity:.45;cursor:not-allowed}
   .hintline{font-size:11.5px;color:var(--muted)}
-  .status{font-size:12.5px;color:var(--gold);min-height:18px}
+  .hintline b{color:var(--ink);font-weight:500}
+  .status{font-size:12.5px;color:var(--gold);min-height:18px;font-weight:500}
+  .status.warn{color:var(--err)}
 
   /* file grids */
   .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-top:8px}
-  .pcard{padding:8px;border:1px solid var(--line);border-radius:12px;background:var(--bg-soft)}
-  .pimg{position:relative;width:100%;aspect-ratio:4/3;border-radius:8px;overflow:hidden;background:#0d0b0c}
+  .pcard{padding:8px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+  .pimg{position:relative;width:100%;aspect-ratio:4/3;border-radius:8px;overflow:hidden;background:#efeadd}
   @supports not (aspect-ratio:4/3){.pimg{height:0;padding-bottom:75%}}
   .pimg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;cursor:zoom-in}
-  .pimg .owner{position:absolute;left:6px;bottom:6px;background:rgba(19,16,17,.8);color:var(--gold);
+  .pimg .owner{position:absolute;left:6px;bottom:6px;background:rgba(42,37,29,.78);color:#f2e6c8;
     font-size:10px;border-radius:20px;padding:2px 8px;pointer-events:none}
   .pimg.vid::after{content:"▶";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-    width:34px;height:34px;border-radius:50%;background:rgba(19,16,17,.7);border:1px solid var(--gold);
-    color:var(--gold);display:grid;place-items:center;font-size:13px;padding-left:3px;pointer-events:none}
+    width:34px;height:34px;border-radius:50%;background:rgba(42,37,29,.65);border:1px solid #fff;
+    color:#fff;display:grid;place-items:center;font-size:13px;padding-left:3px;pointer-events:none}
   .pname{font-size:10.5px;color:var(--muted);text-align:center;margin-top:6px;word-break:break-all}
   .pbtns{display:flex;gap:6px;justify-content:center;margin-top:6px}
-  .del{border:1px solid rgba(224,132,132,.5);border-radius:999px;background:none;color:var(--err);
+  .del{border:1px solid #e0bcc2;border-radius:999px;background:#fbf3f4;color:var(--err);
     font-size:11px;padding:4px 12px}
-  .del:hover{background:var(--err);color:#131011}
+  .del:hover{background:var(--err);border-color:var(--err);color:#fff}
   .empty-note{font-size:12px;color:var(--muted);padding:8px 2px}
   .busy{opacity:.45;pointer-events:none}
 
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
-    background:var(--gold);color:#131011;font-size:13px;padding:11px 20px;border-radius:999px;
-    opacity:0;pointer-events:none;transition:all .25s ease;z-index:99;max-width:92vw;text-align:center;font-weight:500}
+    background:var(--ink);color:#fff;font-size:13px;padding:11px 20px;border-radius:999px;
+    opacity:0;pointer-events:none;transition:all .25s ease;z-index:99;max-width:92vw;text-align:center}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
-  .lb{position:fixed;inset:0;background:rgba(10,8,9,.95);display:none;align-items:center;justify-content:center;z-index:98;padding:20px}
+  .lb{position:fixed;inset:0;background:rgba(30,25,18,.92);display:none;align-items:center;justify-content:center;z-index:98;padding:20px}
   .lb.show{display:flex}
-  .lb img{max-width:96vw;max-height:92vh;border-radius:10px;border:1px solid var(--line)}
-  .lb .x{position:absolute;top:14px;right:18px;background:none;border:none;color:var(--ink);font-size:28px;cursor:pointer}
+  .lb img{max-width:96vw;max-height:92vh;border-radius:10px}
+  .lb .x{position:absolute;top:14px;right:18px;background:none;border:none;color:#fff;font-size:28px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -134,17 +142,17 @@
   <div class="quota card" id="quotaBox"></div>
 
   <!-- upload photos -->
-  <h2 class="sec">Upload Photos <small>· jpg / png / heic → auto-converted to WebP (max 1600px)</small></h2>
+  <h2 class="sec">Upload Photos <small>· jpg / png / heic → auto-converted to WebP (max 1600px) · <b>5 per day</b></small></h2>
   <div class="upwrap card" id="photoUpBox">
     <div class="day-pills" id="dayPills"></div>
     <button class="upl-btn" id="photoBtn">＋ Choose photos to upload</button>
     <input type="file" id="photoInput" accept="image/*" multiple hidden>
     <div class="status" id="photoStatus"></div>
-    <div class="hintline">Files are renamed automatically: <b>yourname-1.webp, yourname-2.webp …</b></div>
+    <div class="hintline">Files are renamed automatically per day: <b>yourname-1.webp, yourname-2.webp …</b></div>
   </div>
 
   <!-- upload videos -->
-  <h2 class="sec">Upload Videos <small>· mp4 / mov — uploaded as-is, saved to the "video" folder</small></h2>
+  <h2 class="sec">Upload Videos <small>· mp4 / mov — saved to the "video" folder</small></h2>
   <div class="upwrap card" id="videoUpBox">
     <button class="upl-btn" id="videoBtn">＋ Choose videos to upload</button>
     <input type="file" id="videoInput" accept="video/*" multiple hidden>
@@ -185,7 +193,8 @@ const CONFIG = {
 
   superAdmin: "benchvue101@gmail.com",
 
-  /* Teachers. Kyungchul carries the couple quota (his + Ellen's = 10/10). */
+  /* Quotas: photoMax = PER DAY (day1..day5 each), videoMax = total.
+     Kyungchul carries the couple quota (his + Ellen's = 10 per day / 10 videos). */
   teachers: [
     { name:"Hae-young Chun",    first:"haeyoung",  email:"hyc333@yahoo.com",     photoMax:5,  videoMax:5  },
     { name:"Henry Hongsok",     first:"henry",     email:"hongskwon@gmail.com",  photoMax:5,  videoMax:5  },
@@ -194,7 +203,7 @@ const CONFIG = {
     { name:"Jongbin Ym",        first:"jongbin",   email:"benchvue101@gmail.com",photoMax:5,  videoMax:5  },
     { name:"Mihee Kang",        first:"mihee",     email:"mihekang@hotmail.com", photoMax:5,  videoMax:5  },
     { name:"Kyungchul Lee",     first:"kyungchul", email:"kcsend@gmail.com",     photoMax:10, videoMax:10,
-      note:"couple quota with Ellen (10 + 10 total)" }
+      note:"couple quota with Ellen (10 per day / 10 videos)" }
   ]
 };
 
@@ -210,7 +219,7 @@ const toast=m=>{const t=$("toast");t.textContent=m;t.classList.add("show");
 const teacherByEmail=e=>CONFIG.teachers.find(t=>t.email.toLowerCase()===(e||"").toLowerCase());
 const teacherByFirst=f=>CONFIG.teachers.find(t=>t.first===(f||"").toLowerCase());
 
-/* ══════════════ auth (same pattern as camino) ══════════════ */
+/* ══════════════ auth ══════════════ */
 const initAuth=()=>{
   tokenClient=google.accounts.oauth2.initTokenClient({
     client_id:CONFIG.clientId,
@@ -295,7 +304,7 @@ const deleteDriveFile=async(fileId,parentId)=>{
   }
 };
 
-/* thumbnail with webview-safe fallback chain (from camino) */
+/* thumbnail with webview-safe fallback chain */
 const setDriveImg=(img,id,w,link)=>{
   const chain=[];
   if(link)chain.push(link.replace(/=s\d+[^&]*$/,"=s"+w));
@@ -354,9 +363,7 @@ async function loadAll(){
       fl.forEach(f=>driveFiles.push({folder:fn,file:f}));
     }
 
-    /* 4. reconcile db <-> Drive (self-healing)
-          - drive file missing in db  -> adopt (owner from filename prefix, ts from createdTime)
-          - db entry whose file is gone -> drop */
+    /* 4. reconcile db <-> Drive (self-healing) */
     const driveIds=new Set(driveFiles.map(x=>x.file.id));
     let changed=false;
     const before=db.uploads.length;
@@ -377,7 +384,6 @@ async function loadAll(){
     }
     if(changed)await writeDb(db);
 
-    /* keep drive metadata handy for thumbnails */
     window._driveMeta={};
     driveFiles.forEach(x=>window._driveMeta[x.file.id]=x.file);
 
@@ -386,16 +392,25 @@ async function loadAll(){
   }catch(e){toast("⚠ "+e.message);}
 }
 
-/* ══════════════ quota helpers ══════════════ */
-const countOf=(email,type)=>db.uploads.filter(u=>u.email.toLowerCase()===email.toLowerCase()&&u.type===type).length;
-const limitOf=(t,type)=>type==="photo"?t.photoMax:t.videoMax;
+/* ══════════════ quota helpers (photos are PER DAY) ══════════════ */
+const countPhotosDay=(email,day)=>db.uploads.filter(u=>
+  u.email.toLowerCase()===email.toLowerCase()&&u.type==="photo"&&u.folder===day).length;
+const countVideos=(email)=>db.uploads.filter(u=>
+  u.email.toLowerCase()===email.toLowerCase()&&u.type==="video").length;
 
-/* next free number for name-N.ext (fills gaps left by deletes) */
-function nextNumber(t,type){
+/* next free number: photos numbered per day, videos numbered overall (fills gaps) */
+function nextPhotoNumber(t,day){
   const used=new Set(db.uploads
-    .filter(u=>u.email.toLowerCase()===t.email.toLowerCase()&&u.type===type)
+    .filter(u=>u.email.toLowerCase()===t.email.toLowerCase()&&u.type==="photo"&&u.folder===day)
     .map(u=>{const m=/-(\d+)\./.exec(u.name);return m?parseInt(m[1],10):0;}));
-  for(let n=1;n<=limitOf(t,type);n++)if(!used.has(n))return n;
+  for(let n=1;n<=t.photoMax;n++)if(!used.has(n))return n;
+  return null;
+}
+function nextVideoNumber(t){
+  const used=new Set(db.uploads
+    .filter(u=>u.email.toLowerCase()===t.email.toLowerCase()&&u.type==="video")
+    .map(u=>{const m=/-(\d+)\./.exec(u.name);return m?parseInt(m[1],10):0;}));
+  for(let n=1;n<=t.videoMax;n++)if(!used.has(n))return n;
   return null;
 }
 
@@ -417,7 +432,7 @@ async function toWebp(file){
   if(blob&&blob.type==="image/webp")return{blob,ext:"webp",mime:"image/webp"};
   const jpg=await new Promise(r=>c.toBlob(r,"image/jpeg",0.85));
   if(!jpg)throw new Error("image conversion failed");
-  return{blob:jpg,ext:"jpg",mime:"image/jpeg"};   /* rare fallback (old Safari) */
+  return{blob:jpg,ext:"jpg",mime:"image/jpeg"};
 }
 
 /* ══════════════ uploads ══════════════ */
@@ -432,13 +447,14 @@ $("photoInput").addEventListener("change",async e=>{
   for(const f of files){
     try{
       db=await readDb();                                   /* fresh count every file */
-      if(countOf(me.email,"photo")>=me.photoMax){toast("⚠ Photo quota full ("+me.photoMax+")");break;}
-      const n=nextNumber(me,"photo");
-      if(n==null){toast("⚠ Photo quota full ("+me.photoMax+")");break;}
+      if(countPhotosDay(me.email,curDay)>=me.photoMax){
+        toast("⚠ "+curDay+" is full ("+me.photoMax+" photos) — other days are still open");break;}
+      const n=nextPhotoNumber(me,curDay);
+      if(n==null){toast("⚠ "+curDay+" is full ("+me.photoMax+" photos)");break;}
       $("photoStatus").textContent="Converting "+f.name+" …";
       const w=await toWebp(f);
       const name=me.first+"-"+n+"."+w.ext;
-      $("photoStatus").textContent="Uploading "+name+" …";
+      $("photoStatus").textContent="Uploading "+name+" to "+curDay+" …";
       const up=await uploadBlob(name,w.mime,w.blob,folderIds[curDay],
         p=>$("photoStatus").textContent="Uploading "+name+" … "+Math.round(p*100)+"%");
       await updateDb(d=>d.uploads.push({fileId:up.id,name,type:"photo",folder:curDay,email:me.email,ts:Date.now()}));
@@ -459,8 +475,8 @@ $("videoInput").addEventListener("change",async e=>{
   for(const f of files){
     try{
       db=await readDb();
-      if(countOf(me.email,"video")>=me.videoMax){toast("⚠ Video quota full ("+me.videoMax+")");break;}
-      const n=nextNumber(me,"video");
+      if(countVideos(me.email)>=me.videoMax){toast("⚠ Video quota full ("+me.videoMax+")");break;}
+      const n=nextVideoNumber(me);
       if(n==null){toast("⚠ Video quota full ("+me.videoMax+")");break;}
       const name=me.first+"-"+n+".mp4";
       $("videoStatus").textContent="Uploading "+name+" …";
@@ -479,7 +495,7 @@ $("videoInput").addEventListener("change",async e=>{
 /* ══════════════ delete ══════════════ */
 async function removeUpload(u){
   if(!isSuper&&u.email.toLowerCase()!==myEmail)return toast("You can only delete your own files");
-  if(!confirm("Delete "+u.name+" ?"))return;
+  if(!confirm("Delete "+u.name+" ("+u.folder+") ?"))return;
   try{
     await deleteDriveFile(u.fileId,folderIds[u.folder]);
     await updateDb(d=>{d.uploads=d.uploads.filter(x=>x.fileId!==u.fileId);});
@@ -490,32 +506,59 @@ async function removeUpload(u){
 
 /* ══════════════ render ══════════════ */
 function renderAll(){
-  /* quota box */
-  const p=countOf(me.email,"photo"),v=countOf(me.email,"video");
-  let q="Your quota — Photos: <b>"+p+" / "+me.photoMax+"</b> · Videos: <b>"+v+" / "+me.videoMax+"</b>";
+  /* quota box — per-day photo counts + total videos */
+  const v=countVideos(me.email);
+  let q;
+  if(me.photoMax===0){
+    q="<span class='warn'>Your uploads go through Kyungchul's account (couple quota: 10 photos per day / 10 videos).</span>";
+  }else{
+    const parts=CONFIG.photoFolders.map(d=>{
+      const c=countPhotosDay(me.email,d);
+      return d+" <b"+(c>=me.photoMax?" class='warn'":"")+">"+c+"/"+me.photoMax+"</b>";
+    });
+    q="Your photos (max "+me.photoMax+" per day) — "+parts.join(" · ")
+     +"<br>Your videos — <b"+(v>=me.videoMax?" class='warn'":"")+">"+v+" / "+me.videoMax+"</b>";
+  }
   if(me.note)q+="<br><span style='font-size:12px;color:var(--muted)'>"+me.note+"</span>";
-  if(me.photoMax===0)q="<span class='warn'>Your uploads go through Kyungchul's account (couple quota 10 + 10).</span>";
   if(isSuper)q+="<br><span style='font-size:12px;color:var(--muted)'>Super admin — you can see and delete every file below.</span>";
   $("quotaBox").innerHTML=q;
-  const canUp=me.photoMax>0;
-  $("photoBtn").disabled=!canUp||p>=me.photoMax;
-  $("videoBtn").disabled=!canUp||countOf(me.email,"video")>=me.videoMax;
 
-  /* day pills */
-  $("dayPills").innerHTML=CONFIG.photoFolders.map(d=>
-    "<button data-d='"+d+"' class='"+(d===curDay?"on":"")+"'>"+d.toUpperCase()+"</button>").join("");
+  const canUp=me.photoMax>0;
+  const dayFull=canUp&&countPhotosDay(me.email,curDay)>=me.photoMax;
+  $("photoBtn").disabled=!canUp||dayFull;                 /* only THIS day being full disables the button */
+  $("photoBtn").textContent=dayFull?("✕ "+curDay+" is full — pick another day"):"＋ Choose photos to upload";
+  $("videoBtn").disabled=!canUp||v>=me.videoMax;
+  const ps=$("photoStatus");
+  ps.classList.toggle("warn",dayFull);
+  ps.textContent=dayFull?(curDay+" already has "+me.photoMax+" of your photos. day2–day5 may still be open — tap another day above."):"";
+
+  /* day pills with live counts */
+  $("dayPills").innerHTML=CONFIG.photoFolders.map(d=>{
+    const c=canUp?countPhotosDay(me.email,d):0;
+    const full=canUp&&c>=me.photoMax;
+    return "<button data-d='"+d+"' class='"+(d===curDay?"on ":"")+(full?"fullday":"")+"'>"
+      +d.toUpperCase()+(canUp?" · "+c+"/"+me.photoMax:"")+"</button>";
+  }).join("");
   [...$("dayPills").children].forEach(b=>b.addEventListener("click",()=>{curDay=b.dataset.d;renderAll();}));
 
   /* teacher table */
-  let rows="<tr><th>Teacher</th><th>Photos</th><th>Videos</th></tr>";
+  let rows="<tr><th>Teacher</th><th>Photos per day (d1 · d2 · d3 · d4 · d5)</th><th>Videos</th></tr>";
   for(const t of CONFIG.teachers){
-    const tp=countOf(t.email,"photo"),tv=countOf(t.email,"video");
     const meCls=t.email.toLowerCase()===myEmail?" class='me'":"";
-    const pf=t.photoMax>0&&tp>=t.photoMax?" class='full'":"";
-    const vf=t.videoMax>0&&tv>=t.videoMax?" class='full'":"";
-    rows+="<tr"+meCls+"><td><b>"+t.name+"</b>"+(t.note?" <span style='font-size:11px;color:var(--muted)'>("+t.note+")</span>":"")+"</td>"
-      +(t.photoMax===0?"<td colspan='2' style='color:var(--muted)'>shared with Kyungchul</td>"
-        :"<td"+pf+">"+tp+" / "+t.photoMax+"</td><td"+vf+">"+tv+" / "+t.videoMax+"</td>")+"</tr>";
+    if(t.photoMax===0){
+      rows+="<tr"+meCls+"><td><b>"+t.name+"</b> <span style='font-size:11px;color:var(--muted)'>("+t.note+")</span></td>"
+        +"<td colspan='2' style='color:var(--muted)'>shared with Kyungchul</td></tr>";
+      continue;
+    }
+    const cells=CONFIG.photoFolders.map(d=>{
+      const c=countPhotosDay(t.email,d);
+      return c>=t.photoMax?"<span class='full'>"+c+"</span>":c;
+    }).join(" · ");
+    const tv=countVideos(t.email);
+    rows+="<tr"+meCls+"><td><b>"+t.name+"</b>"
+      +(t.note?" <span style='font-size:11px;color:var(--muted)'>("+t.note+")</span>":"")+"</td>"
+      +"<td>"+cells+" <span style='color:var(--muted);font-size:11px'>(max "+t.photoMax+" each)</span></td>"
+      +"<td"+(tv>=t.videoMax?" class='full'":"")+">"+tv+" / "+t.videoMax+"</td></tr>";
   }
   $("teacherTable").innerHTML=rows;
 
