@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>HCTP Upload — 2026 Summer Camp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root{
+    --bg:#131011; --bg-soft:#1c1719; --ink:#f2ece2; --gold:#c9a45c;
+    --gold-dim:#8a7040; --muted:#9b9089; --line:rgba(201,164,92,.35);
+    --ok:#7fbf7f; --err:#e08484; --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1200px 600px at 50% -200px, rgba(201,164,92,.10), transparent 60%),var(--bg);
+    color:var(--ink);font-family:'Noto Sans KR',sans-serif;font-weight:300;min-height:100vh;font-size:14.5px;line-height:1.6}
+  button{font-family:inherit;cursor:pointer}
+  .card{border:1px solid var(--line);border-radius:var(--radius);background:var(--bg-soft)}
+
+  /* lock screen */
+  .lock{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .lock-card{text-align:center;padding:44px 32px;max-width:430px;width:100%}
+  .lock-title{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:26px;color:var(--gold);margin-top:10px}
+  .lock-sub{margin-top:12px;font-size:13px;color:var(--muted);line-height:1.8}
+  .gsign{margin-top:24px;display:inline-flex;align-items:center;gap:10px;border:1px solid var(--gold);
+    border-radius:999px;background:var(--gold);color:#131011;padding:12px 26px;font-size:14px;font-weight:500}
+  .gsign:hover{background:transparent;color:var(--gold)}
+  .denied{color:var(--err);margin-top:16px;font-size:13px;display:none}
+
+  /* panel */
+  .panel{display:none;max-width:1100px;margin:0 auto;padding:20px clamp(12px,3vw,34px) 90px}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    padding:14px 18px;margin-bottom:16px}
+  .topbar h1{font-family:'Cormorant Garamond',serif;font-size:clamp(18px,4vw,24px);font-weight:400;letter-spacing:.06em}
+  .topbar h1 em{font-style:italic;color:var(--gold)}
+  .who{font-size:12px;color:var(--muted)}
+  .who b{color:var(--gold);font-weight:500}
+  .actions{display:flex;gap:8px;flex-wrap:wrap}
+  .mini{border:1px solid var(--gold-dim);border-radius:999px;background:none;color:var(--gold);
+    font-size:12px;padding:7px 14px;text-decoration:none;display:inline-block}
+  .mini:hover{background:var(--gold);color:#131011}
+
+  h2.sec{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:400;font-size:21px;
+    letter-spacing:.08em;color:var(--gold);margin:26px 0 10px}
+  h2.sec small{font-family:'Noto Sans KR',sans-serif;font-style:normal;font-size:11.5px;color:var(--muted);letter-spacing:.04em}
+
+  /* quota + teacher table */
+  .quota{padding:16px 18px;font-size:14px}
+  .quota b{color:var(--gold);font-weight:500}
+  .quota .warn{color:var(--err)}
+  table.tt{width:100%;border-collapse:collapse;font-size:13px}
+  table.tt th,table.tt td{padding:9px 12px;text-align:left;border-bottom:1px solid rgba(201,164,92,.15)}
+  table.tt th{color:var(--gold-dim);font-weight:400;font-size:11px;letter-spacing:.18em;text-transform:uppercase}
+  table.tt td b{color:var(--gold);font-weight:500}
+  table.tt tr.me td{background:rgba(201,164,92,.07)}
+  .full{color:var(--err)}
+
+  /* upload controls */
+  .upwrap{padding:18px;display:grid;gap:14px}
+  .day-pills{display:flex;gap:8px;flex-wrap:wrap}
+  .day-pills button{border:1px solid var(--gold-dim);border-radius:999px;background:none;color:var(--gold);
+    font-size:12.5px;padding:7px 16px;letter-spacing:.06em}
+  .day-pills button.on{background:var(--gold);color:#131011;font-weight:500}
+  .upl-btn{display:inline-flex;align-items:center;gap:8px;border:1px dashed var(--gold-dim);border-radius:12px;
+    background:none;color:var(--ink);font-size:13.5px;padding:13px 18px;width:100%;justify-content:center}
+  .upl-btn:hover{border-color:var(--gold);color:var(--gold)}
+  .upl-btn:disabled{opacity:.4;cursor:not-allowed}
+  .hintline{font-size:11.5px;color:var(--muted)}
+  .status{font-size:12.5px;color:var(--gold);min-height:18px}
+
+  /* file grids */
+  .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-top:8px}
+  .pcard{padding:8px;border:1px solid var(--line);border-radius:12px;background:var(--bg-soft)}
+  .pimg{position:relative;width:100%;aspect-ratio:4/3;border-radius:8px;overflow:hidden;background:#0d0b0c}
+  @supports not (aspect-ratio:4/3){.pimg{height:0;padding-bottom:75%}}
+  .pimg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;cursor:zoom-in}
+  .pimg .owner{position:absolute;left:6px;bottom:6px;background:rgba(19,16,17,.8);color:var(--gold);
+    font-size:10px;border-radius:20px;padding:2px 8px;pointer-events:none}
+  .pimg.vid::after{content:"▶";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:34px;height:34px;border-radius:50%;background:rgba(19,16,17,.7);border:1px solid var(--gold);
+    color:var(--gold);display:grid;place-items:center;font-size:13px;padding-left:3px;pointer-events:none}
+  .pname{font-size:10.5px;color:var(--muted);text-align:center;margin-top:6px;word-break:break-all}
+  .pbtns{display:flex;gap:6px;justify-content:center;margin-top:6px}
+  .del{border:1px solid rgba(224,132,132,.5);border-radius:999px;background:none;color:var(--err);
+    font-size:11px;padding:4px 12px}
+  .del:hover{background:var(--err);color:#131011}
+  .empty-note{font-size:12px;color:var(--muted);padding:8px 2px}
+  .busy{opacity:.45;pointer-events:none}
+
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+    background:var(--gold);color:#131011;font-size:13px;padding:11px 20px;border-radius:999px;
+    opacity:0;pointer-events:none;transition:all .25s ease;z-index:99;max-width:92vw;text-align:center;font-weight:500}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .lb{position:fixed;inset:0;background:rgba(10,8,9,.95);display:none;align-items:center;justify-content:center;z-index:98;padding:20px}
+  .lb.show{display:flex}
+  .lb img{max-width:96vw;max-height:92vh;border-radius:10px;border:1px solid var(--line)}
+  .lb .x{position:absolute;top:14px;right:18px;background:none;border:none;color:var(--ink);font-size:28px;cursor:pointer}
+</style>
+</head>
+<body>
+
+<!-- ── lock screen ── -->
+<div class="lock" id="lockScreen">
+  <div class="lock-card card">
+    <div style="font-size:32px">🏕️🔒</div>
+    <div class="lock-title">HCTP Upload · 2026</div>
+    <div class="lock-sub">Teachers only.<br>
+      Sign in with your registered Google account.<br>
+      Please check the <b>Google Drive</b> box on the consent screen.</div>
+    <button class="gsign" id="signInBtn">G · Sign in with Google</button>
+    <div class="denied" id="deniedMsg">This account is not registered as a teacher.</div>
+  </div>
+</div>
+
+<!-- ── main panel ── -->
+<div class="panel" id="panel">
+  <div class="topbar card">
+    <div>
+      <h1>HCTP <em>2026 Upload</em></h1>
+      <div class="who" id="whoAmI"></div>
+    </div>
+    <div class="actions">
+      <a class="mini" href="index.html">View Site</a>
+      <button class="mini" id="refreshBtn">↻ Refresh</button>
+      <button class="mini" id="signOutBtn">Sign out</button>
+    </div>
+  </div>
+
+  <!-- my quota -->
+  <div class="quota card" id="quotaBox"></div>
+
+  <!-- upload photos -->
+  <h2 class="sec">Upload Photos <small>· jpg / png / heic → auto-converted to WebP (max 1600px)</small></h2>
+  <div class="upwrap card" id="photoUpBox">
+    <div class="day-pills" id="dayPills"></div>
+    <button class="upl-btn" id="photoBtn">＋ Choose photos to upload</button>
+    <input type="file" id="photoInput" accept="image/*" multiple hidden>
+    <div class="status" id="photoStatus"></div>
+    <div class="hintline">Files are renamed automatically: <b>yourname-1.webp, yourname-2.webp …</b></div>
+  </div>
+
+  <!-- upload videos -->
+  <h2 class="sec">Upload Videos <small>· mp4 / mov — uploaded as-is, saved to the "video" folder</small></h2>
+  <div class="upwrap card" id="videoUpBox">
+    <button class="upl-btn" id="videoBtn">＋ Choose videos to upload</button>
+    <input type="file" id="videoInput" accept="video/*" multiple hidden>
+    <div class="status" id="videoStatus"></div>
+    <div class="hintline">Renamed automatically: <b>yourname-1.mp4 …</b> H.264 mp4 plays best on all phones.</div>
+  </div>
+
+  <!-- teacher summary -->
+  <h2 class="sec">All Teachers <small>· counts only</small></h2>
+  <div class="card" style="overflow-x:auto"><table class="tt" id="teacherTable"></table></div>
+
+  <!-- my / all files -->
+  <h2 class="sec" id="filesTitle">My Photos</h2>
+  <div id="photoRoot"></div>
+
+  <h2 class="sec" id="videosTitle">My Videos <small>· first uploaded, first shown</small></h2>
+  <div id="videoRoot"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="lb" id="lb"><button class="x" id="lbX">✕</button><img id="lbImg" alt="preview"></div>
+
+<script>
+/* ══════════════ CONFIG ══════════════ */
+const CONFIG = {
+  clientId: "1075824030904-483gk6d1pa361u0ink9v55o0m572rnej.apps.googleusercontent.com",
+
+  /* Google Drive "2026" folder (from the shared link) */
+  rootFolder: "1Roissh94L1dbhzTSnYEN5IbchacskgbH",
+
+  photoFolders: ["day1","day2","day3","day4","day5"],
+  videoFolder: "video",
+  dbFolder: "db",
+  dbFileName: "hctp-2026-db.json",
+
+  webpQuality: 0.82,
+  webpMaxDim: 1600,
+
+  superAdmin: "benchvue101@gmail.com",
+
+  /* Teachers. Kyungchul carries the couple quota (his + Ellen's = 10/10). */
+  teachers: [
+    { name:"Hae-young Chun",    first:"haeyoung",  email:"hyc333@yahoo.com",     photoMax:5,  videoMax:5  },
+    { name:"Henry Hongsok",     first:"henry",     email:"hongskwon@gmail.com",  photoMax:5,  videoMax:5  },
+    { name:"Ellen Lee",         first:"ellen",     email:"sjsend@hotmail.com",   photoMax:0,  videoMax:0,
+      note:"uploads via Kyungchul (couple quota)" },
+    { name:"Jongbin Ym",        first:"jongbin",   email:"benchvue101@gmail.com",photoMax:5,  videoMax:5  },
+    { name:"Mihee Kang",        first:"mihee",     email:"mihekang@hotmail.com", photoMax:5,  videoMax:5  },
+    { name:"Kyungchul Lee",     first:"kyungchul", email:"kcsend@gmail.com",     photoMax:10, videoMax:10,
+      note:"couple quota with Ellen (10 + 10 total)" }
+  ]
+};
+
+/* ══════════════ state ══════════════ */
+let accessToken=null, myEmail="", me=null, isSuper=false, tokenClient=null;
+let folderIds={};            /* name -> id (day1..day5, video, db) */
+let dbFileId=null;
+let db={uploads:[]};         /* {fileId,name,type:'photo'|'video',folder,email,ts} */
+let curDay="day1";
+const $=id=>document.getElementById(id);
+const toast=m=>{const t=$("toast");t.textContent=m;t.classList.add("show");
+  clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),/fail|error|⚠|denied|full/i.test(m)?7000:3000);};
+const teacherByEmail=e=>CONFIG.teachers.find(t=>t.email.toLowerCase()===(e||"").toLowerCase());
+const teacherByFirst=f=>CONFIG.teachers.find(t=>t.first===(f||"").toLowerCase());
+
+/* ══════════════ auth (same pattern as camino) ══════════════ */
+const initAuth=()=>{
+  tokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:CONFIG.clientId,
+    scope:"https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.email",
+    callback:(resp)=>{
+      if(resp.error){toast("Sign-in failed: "+resp.error);return;}
+      if(google.accounts.oauth2.hasGrantedAllScopes&&
+         !google.accounts.oauth2.hasGrantedAllScopes(resp,"https://www.googleapis.com/auth/drive")){
+        toast("⚠ Please check the Google Drive box on the consent screen and sign in again.");
+        setTimeout(()=>tokenClient.requestAccessToken({prompt:"consent"}),1800);return;
+      }
+      accessToken=resp.access_token;
+      fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+accessToken}})
+      .then(r=>r.json()).then(info=>{
+        myEmail=(info.email||"").toLowerCase();
+        me=teacherByEmail(myEmail);
+        if(!me){accessToken=null;$("deniedMsg").style.display="block";return;}
+        isSuper=(myEmail===CONFIG.superAdmin.toLowerCase());
+        $("lockScreen").style.display="none";$("panel").style.display="block";
+        $("whoAmI").innerHTML="Signed in: <b>"+me.name+"</b> · "+myEmail+(isSuper?" · <b>SUPER ADMIN</b>":"");
+        loadAll();
+      }).catch(()=>toast("Could not fetch account info"));
+    }
+  });
+};
+$("signInBtn").addEventListener("click",()=>{
+  if(!tokenClient){ if(window.google&&google.accounts)initAuth();
+    else{toast("Google sign-in still loading… try again in a moment");return;} }
+  $("deniedMsg").style.display="none";tokenClient.requestAccessToken();
+});
+$("signOutBtn").addEventListener("click",()=>{
+  if(accessToken)google.accounts.oauth2.revoke(accessToken,function(){});location.reload();});
+$("refreshBtn").addEventListener("click",()=>loadAll());
+window.addEventListener("load",()=>{if(window.google&&google.accounts)initAuth();});
+
+/* ══════════════ Drive helpers ══════════════ */
+const authHeaders=()=>({Authorization:"Bearer "+accessToken});
+const gFetch=(url,opt)=>fetch(url,Object.assign({},opt,{headers:Object.assign({},authHeaders(),(opt&&opt.headers)||{})}))
+  .then(r=>{ if(!r.ok) return r.json().catch(()=>({})).then(d=>{
+      const msg=(d.error&&d.error.message)||("HTTP "+r.status);
+      let hint="";
+      if(r.status===403)hint=" — check that your account is an Editor of the 2026 folder";
+      if(r.status===404)hint=" — folder/file not found";
+      throw new Error(msg+hint);});
+    return r.status===204?null:r.json();});
+
+const listChildren=(parentId,extraQ)=>
+  gFetch("https://www.googleapis.com/drive/v3/files?q="
+    +encodeURIComponent("'"+parentId+"' in parents and trashed=false"+(extraQ||""))
+    +"&fields="+encodeURIComponent("files(id,name,mimeType,createdTime,thumbnailLink,owners(emailAddress))")
+    +"&pageSize=1000").then(d=>d.files||[]);
+
+const createFolder=(name,parentId)=>
+  gFetch("https://www.googleapis.com/drive/v3/files?fields=id,name",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({name,mimeType:"application/vnd.google-apps.folder",parents:[parentId]})});
+
+const uploadBlob=(name,mime,blob,folderId,onProgress)=>new Promise((resolve,reject)=>{
+  const meta={name:name,parents:[folderId]};
+  const boundary="hctp"+Date.now();
+  const head="--"+boundary+"\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n"
+    +JSON.stringify(meta)+"\r\n--"+boundary+"\r\nContent-Type: "+mime+"\r\n\r\n";
+  const body=new Blob([head,blob,"\r\n--"+boundary+"--"]);
+  const xhr=new XMLHttpRequest();
+  xhr.open("POST","https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name");
+  xhr.setRequestHeader("Authorization","Bearer "+accessToken);
+  xhr.setRequestHeader("Content-Type","multipart/related; boundary="+boundary);
+  xhr.upload.onprogress=e=>{if(e.lengthComputable&&onProgress)onProgress(e.loaded/e.total);};
+  xhr.onload=()=>{ if(xhr.status>=200&&xhr.status<300)resolve(JSON.parse(xhr.responseText));
+    else reject(new Error("upload failed ("+xhr.status+")")); };
+  xhr.onerror=()=>reject(new Error("network error"));
+  xhr.send(body);
+});
+
+const deleteDriveFile=async(fileId,parentId)=>{
+  try{
+    await gFetch("https://www.googleapis.com/drive/v3/files/"+fileId,{method:"DELETE"});
+  }catch(e){
+    /* not the owner → remove it from the folder instead (super admin case) */
+    await gFetch("https://www.googleapis.com/drive/v3/files/"+fileId+"?removeParents="+parentId,
+      {method:"PATCH",headers:{"Content-Type":"application/json"},body:"{}"});
+  }
+};
+
+/* thumbnail with webview-safe fallback chain (from camino) */
+const setDriveImg=(img,id,w,link)=>{
+  const chain=[];
+  if(link)chain.push(link.replace(/=s\d+[^&]*$/,"=s"+w));
+  chain.push("https://drive.google.com/thumbnail?id="+id+"&sz=w"+w);
+  chain.push("https://lh3.googleusercontent.com/d/"+id+"=w"+w);
+  let k=0;
+  img.onerror=()=>{k++;if(k<chain.length)img.src=chain[k];else{img.onerror=null;img.style.opacity=.25;}};
+  img.src=chain[0];
+};
+
+/* ══════════════ db (JSON file in "db" folder) ══════════════ */
+const readDb=()=>gFetch("https://www.googleapis.com/drive/v3/files/"+dbFileId+"?alt=media")
+  .then(d=>({uploads:Array.isArray(d&&d.uploads)?d.uploads:[]}));
+
+const writeDb=(data)=>fetch("https://www.googleapis.com/upload/drive/v3/files/"+dbFileId+"?uploadType=media",
+  {method:"PATCH",headers:Object.assign({"Content-Type":"application/json"},authHeaders()),
+   body:JSON.stringify(data)})
+  .then(r=>{if(!r.ok)throw new Error("db write failed ("+r.status+")");});
+
+/* read-modify-write so two teachers uploading at once don't overwrite each other */
+const updateDb=async(mutator)=>{
+  const fresh=await readDb();
+  mutator(fresh);
+  await writeDb(fresh);
+  db=fresh;
+};
+
+/* ══════════════ load everything ══════════════ */
+async function loadAll(){
+  try{
+    toast("Loading…");
+    /* 1. resolve (or create) subfolders */
+    const kids=await listChildren(CONFIG.rootFolder," and mimeType='application/vnd.google-apps.folder'");
+    folderIds={};
+    kids.forEach(f=>folderIds[f.name]=f.id);
+    const needed=CONFIG.photoFolders.concat([CONFIG.videoFolder,CONFIG.dbFolder]);
+    for(const n of needed){
+      if(!folderIds[n]){const nf=await createFolder(n,CONFIG.rootFolder);folderIds[n]=nf.id;}
+    }
+
+    /* 2. find or create the db file */
+    const dbKids=await listChildren(folderIds[CONFIG.dbFolder]);
+    const dbf=dbKids.find(f=>f.name===CONFIG.dbFileName);
+    if(dbf){dbFileId=dbf.id;}
+    else{
+      const created=await uploadBlob(CONFIG.dbFileName,"application/json",
+        new Blob([JSON.stringify({uploads:[]})]),folderIds[CONFIG.dbFolder]);
+      dbFileId=created.id;
+    }
+    db=await readDb();
+
+    /* 3. list all media files */
+    const driveFiles=[]; /* {folder, file} */
+    for(const fn of CONFIG.photoFolders.concat([CONFIG.videoFolder])){
+      const fl=await listChildren(folderIds[fn]," and mimeType!='application/vnd.google-apps.folder'");
+      fl.forEach(f=>driveFiles.push({folder:fn,file:f}));
+    }
+
+    /* 4. reconcile db <-> Drive (self-healing)
+          - drive file missing in db  -> adopt (owner from filename prefix, ts from createdTime)
+          - db entry whose file is gone -> drop */
+    const driveIds=new Set(driveFiles.map(x=>x.file.id));
+    let changed=false;
+    const before=db.uploads.length;
+    db.uploads=db.uploads.filter(u=>driveIds.has(u.fileId));
+    if(db.uploads.length!==before)changed=true;
+    const dbIds=new Set(db.uploads.map(u=>u.fileId));
+    for(const {folder,file} of driveFiles){
+      if(dbIds.has(file.id))continue;
+      const m=/^([a-z]+)-\d+\./i.exec(file.name);
+      const t=(m&&teacherByFirst(m[1]))||teacherByEmail(file.owners&&file.owners[0]&&file.owners[0].emailAddress);
+      db.uploads.push({
+        fileId:file.id, name:file.name,
+        type:folder===CONFIG.videoFolder?"video":"photo",
+        folder:folder, email:t?t.email:"unknown",
+        ts:Date.parse(file.createdTime)||Date.now()
+      });
+      changed=true;
+    }
+    if(changed)await writeDb(db);
+
+    /* keep drive metadata handy for thumbnails */
+    window._driveMeta={};
+    driveFiles.forEach(x=>window._driveMeta[x.file.id]=x.file);
+
+    renderAll();
+    toast("Loaded ✓");
+  }catch(e){toast("⚠ "+e.message);}
+}
+
+/* ══════════════ quota helpers ══════════════ */
+const countOf=(email,type)=>db.uploads.filter(u=>u.email.toLowerCase()===email.toLowerCase()&&u.type===type).length;
+const limitOf=(t,type)=>type==="photo"?t.photoMax:t.videoMax;
+
+/* next free number for name-N.ext (fills gaps left by deletes) */
+function nextNumber(t,type){
+  const used=new Set(db.uploads
+    .filter(u=>u.email.toLowerCase()===t.email.toLowerCase()&&u.type===type)
+    .map(u=>{const m=/-(\d+)\./.exec(u.name);return m?parseInt(m[1],10):0;}));
+  for(let n=1;n<=limitOf(t,type);n++)if(!used.has(n))return n;
+  return null;
+}
+
+/* ══════════════ photo processing (resize + webp) ══════════════ */
+const loadImage=file=>new Promise((res,rej)=>{
+  const url=URL.createObjectURL(file);
+  const img=new Image();
+  img.onload=()=>{URL.revokeObjectURL(url);res(img);};
+  img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error("Cannot read this image on this device — please convert HEIC to JPG first"));};
+  img.src=url;
+});
+async function toWebp(file){
+  const img=await loadImage(file);
+  const sc=Math.min(1,CONFIG.webpMaxDim/Math.max(img.naturalWidth,img.naturalHeight));
+  const c=document.createElement("canvas");
+  c.width=Math.round(img.naturalWidth*sc);c.height=Math.round(img.naturalHeight*sc);
+  c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+  const blob=await new Promise(r=>c.toBlob(r,"image/webp",CONFIG.webpQuality));
+  if(blob&&blob.type==="image/webp")return{blob,ext:"webp",mime:"image/webp"};
+  const jpg=await new Promise(r=>c.toBlob(r,"image/jpeg",0.85));
+  if(!jpg)throw new Error("image conversion failed");
+  return{blob:jpg,ext:"jpg",mime:"image/jpeg"};   /* rare fallback (old Safari) */
+}
+
+/* ══════════════ uploads ══════════════ */
+$("photoBtn").addEventListener("click",()=>$("photoInput").click());
+$("videoBtn").addEventListener("click",()=>$("videoInput").click());
+
+$("photoInput").addEventListener("change",async e=>{
+  const files=[...e.target.files];e.target.value="";
+  if(!files.length)return;
+  $("photoUpBox").classList.add("busy");
+  let done=0;
+  for(const f of files){
+    try{
+      db=await readDb();                                   /* fresh count every file */
+      if(countOf(me.email,"photo")>=me.photoMax){toast("⚠ Photo quota full ("+me.photoMax+")");break;}
+      const n=nextNumber(me,"photo");
+      if(n==null){toast("⚠ Photo quota full ("+me.photoMax+")");break;}
+      $("photoStatus").textContent="Converting "+f.name+" …";
+      const w=await toWebp(f);
+      const name=me.first+"-"+n+"."+w.ext;
+      $("photoStatus").textContent="Uploading "+name+" …";
+      const up=await uploadBlob(name,w.mime,w.blob,folderIds[curDay],
+        p=>$("photoStatus").textContent="Uploading "+name+" … "+Math.round(p*100)+"%");
+      await updateDb(d=>d.uploads.push({fileId:up.id,name,type:"photo",folder:curDay,email:me.email,ts:Date.now()}));
+      done++;
+    }catch(err){toast("⚠ "+f.name+": "+err.message);}
+  }
+  $("photoStatus").textContent="";
+  $("photoUpBox").classList.remove("busy");
+  if(done)toast(done+" photo(s) uploaded to "+curDay+" ✓");
+  renderAll();
+});
+
+$("videoInput").addEventListener("change",async e=>{
+  const files=[...e.target.files];e.target.value="";
+  if(!files.length)return;
+  $("videoUpBox").classList.add("busy");
+  let done=0;
+  for(const f of files){
+    try{
+      db=await readDb();
+      if(countOf(me.email,"video")>=me.videoMax){toast("⚠ Video quota full ("+me.videoMax+")");break;}
+      const n=nextNumber(me,"video");
+      if(n==null){toast("⚠ Video quota full ("+me.videoMax+")");break;}
+      const name=me.first+"-"+n+".mp4";
+      $("videoStatus").textContent="Uploading "+name+" …";
+      const up=await uploadBlob(name,f.type||"video/mp4",f,folderIds[CONFIG.videoFolder],
+        p=>$("videoStatus").textContent="Uploading "+name+" … "+Math.round(p*100)+"%");
+      await updateDb(d=>d.uploads.push({fileId:up.id,name,type:"video",folder:CONFIG.videoFolder,email:me.email,ts:Date.now()}));
+      done++;
+    }catch(err){toast("⚠ "+f.name+": "+err.message);}
+  }
+  $("videoStatus").textContent="";
+  $("videoUpBox").classList.remove("busy");
+  if(done)toast(done+" video(s) uploaded ✓");
+  renderAll();
+});
+
+/* ══════════════ delete ══════════════ */
+async function removeUpload(u){
+  if(!isSuper&&u.email.toLowerCase()!==myEmail)return toast("You can only delete your own files");
+  if(!confirm("Delete "+u.name+" ?"))return;
+  try{
+    await deleteDriveFile(u.fileId,folderIds[u.folder]);
+    await updateDb(d=>{d.uploads=d.uploads.filter(x=>x.fileId!==u.fileId);});
+    toast("Deleted "+u.name+" ✓  (a slot is free again)");
+    renderAll();
+  }catch(e){toast("⚠ delete failed: "+e.message);}
+}
+
+/* ══════════════ render ══════════════ */
+function renderAll(){
+  /* quota box */
+  const p=countOf(me.email,"photo"),v=countOf(me.email,"video");
+  let q="Your quota — Photos: <b>"+p+" / "+me.photoMax+"</b> · Videos: <b>"+v+" / "+me.videoMax+"</b>";
+  if(me.note)q+="<br><span style='font-size:12px;color:var(--muted)'>"+me.note+"</span>";
+  if(me.photoMax===0)q="<span class='warn'>Your uploads go through Kyungchul's account (couple quota 10 + 10).</span>";
+  if(isSuper)q+="<br><span style='font-size:12px;color:var(--muted)'>Super admin — you can see and delete every file below.</span>";
+  $("quotaBox").innerHTML=q;
+  const canUp=me.photoMax>0;
+  $("photoBtn").disabled=!canUp||p>=me.photoMax;
+  $("videoBtn").disabled=!canUp||countOf(me.email,"video")>=me.videoMax;
+
+  /* day pills */
+  $("dayPills").innerHTML=CONFIG.photoFolders.map(d=>
+    "<button data-d='"+d+"' class='"+(d===curDay?"on":"")+"'>"+d.toUpperCase()+"</button>").join("");
+  [...$("dayPills").children].forEach(b=>b.addEventListener("click",()=>{curDay=b.dataset.d;renderAll();}));
+
+  /* teacher table */
+  let rows="<tr><th>Teacher</th><th>Photos</th><th>Videos</th></tr>";
+  for(const t of CONFIG.teachers){
+    const tp=countOf(t.email,"photo"),tv=countOf(t.email,"video");
+    const meCls=t.email.toLowerCase()===myEmail?" class='me'":"";
+    const pf=t.photoMax>0&&tp>=t.photoMax?" class='full'":"";
+    const vf=t.videoMax>0&&tv>=t.videoMax?" class='full'":"";
+    rows+="<tr"+meCls+"><td><b>"+t.name+"</b>"+(t.note?" <span style='font-size:11px;color:var(--muted)'>("+t.note+")</span>":"")+"</td>"
+      +(t.photoMax===0?"<td colspan='2' style='color:var(--muted)'>shared with Kyungchul</td>"
+        :"<td"+pf+">"+tp+" / "+t.photoMax+"</td><td"+vf+">"+tv+" / "+t.videoMax+"</td>")+"</tr>";
+  }
+  $("teacherTable").innerHTML=rows;
+
+  /* which uploads do I see in the grids? */
+  const visible=isSuper?db.uploads:db.uploads.filter(u=>u.email.toLowerCase()===myEmail);
+  $("filesTitle").textContent=isSuper?"All Photos":"My Photos";
+  $("videosTitle").innerHTML=(isSuper?"All Videos":"My Videos")+" <small>· first uploaded, first shown</small>";
+
+  /* photos grouped by day */
+  let ph="";
+  for(const d of CONFIG.photoFolders){
+    const list=visible.filter(u=>u.type==="photo"&&u.folder===d).sort((a,b)=>a.ts-b.ts);
+    ph+="<h2 class='sec' style='font-size:16px;margin-top:16px'>"+d.toUpperCase()+" <small>· "+list.length+"</small></h2>";
+    ph+=list.length?("<div class='pgrid'>"+list.map(cardHtml).join("")+"</div>")
+                   :"<p class='empty-note'>No photos yet.</p>";
+  }
+  $("photoRoot").innerHTML=ph;
+
+  /* videos, first-upload-first order */
+  const vids=visible.filter(u=>u.type==="video").sort((a,b)=>a.ts-b.ts);
+  $("videoRoot").innerHTML=vids.length
+    ?("<div class='pgrid'>"+vids.map(cardHtml).join("")+"</div>")
+    :"<p class='empty-note'>No videos yet.</p>";
+
+  /* wire thumbnails + buttons */
+  document.querySelectorAll("[data-fid]").forEach(el=>{
+    const u=db.uploads.find(x=>x.fileId===el.dataset.fid);
+    if(!u)return;
+    const meta=(window._driveMeta||{})[u.fileId]||{};
+    const img=el.querySelector("img");
+    if(img)setDriveImg(img,u.fileId,400,meta.thumbnailLink);
+    const del=el.querySelector(".del");
+    if(del)del.addEventListener("click",ev=>{ev.stopPropagation();removeUpload(u);});
+    el.querySelector(".pimg").addEventListener("click",()=>{
+      if(u.type==="video")window.open("https://drive.google.com/file/d/"+u.fileId+"/view","_blank");
+      else{$("lbImg").src="https://drive.google.com/thumbnail?id="+u.fileId+"&sz=w1600";$("lb").classList.add("show");}
+    });
+  });
+}
+
+function cardHtml(u){
+  const t=teacherByEmail(u.email);
+  const owner=(isSuper&&t)?"<span class='owner'>"+t.first+"</span>":"";
+  const canDel=isSuper||u.email.toLowerCase()===myEmail;
+  return "<div class='pcard' data-fid='"+u.fileId+"'>"
+    +"<div class='pimg"+(u.type==="video"?" vid":"")+"'><img alt='"+u.name+"'>"+owner+"</div>"
+    +"<div class='pname'>"+u.name+"</div>"
+    +(canDel?"<div class='pbtns'><button class='del'>Delete</button></div>":"")
+    +"</div>";
+}
+
+/* lightbox */
+$("lbX").addEventListener("click",()=>$("lb").classList.remove("show"));
+$("lb").addEventListener("click",e=>{if(e.target===$("lb"))$("lb").classList.remove("show");});
+</script>
+</body>
+</html>

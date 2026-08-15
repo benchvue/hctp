@@ -1,6 +1,7 @@
 *.zip
 
 origin/
+private/
 
 generate-files.ps1
 dedupe-files.ps1
@@ -8,3 +9,5 @@ make-video-thumbs.ps1
 name-list-after.txt
 name-list-before.txt
 name-list-converted.txt
+
+
