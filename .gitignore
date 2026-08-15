@@ -10,4 +10,5 @@ name-list-after.txt
 name-list-before.txt
 name-list-converted.txt
 
-
+sync-2026.ps1
+generate-files.ps1
