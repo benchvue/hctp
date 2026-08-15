@@ -142,7 +142,7 @@
   <div class="quota card" id="quotaBox"></div>
 
   <!-- upload photos -->
-  <h2 class="sec">Upload Photos <small>· jpg / png / heic → auto-converted to WebP (max 1600px) · <b>5 per day</b></small></h2>
+  <h2 class="sec">Upload Photos <small>· jpg / png / heic → auto-converted to WebP (max 1600px) · <b>daily limits shown on the buttons</b></small></h2>
   <div class="upwrap card" id="photoUpBox">
     <div class="day-pills" id="dayPills"></div>
     <button class="upl-btn" id="photoBtn">＋ Choose photos to upload</button>
@@ -193,15 +193,27 @@ const CONFIG = {
 
   superAdmin: "benchvue101@gmail.com",
 
-  /* Quotas: photoMax = PER DAY (day1..day5 each), videoMax = total.
-     Kyungchul carries the couple quota (his + Ellen's = 10 per day / 10 videos). */
+  /* Quotas: photoMax = PER DAY. A number means the same limit every day;
+     an object {day1:..,day5:..} sets a different limit per day.
+     videoMax = total.
+     - Kyungchul carries the couple quota with Ellen (10/day, 10 videos)
+     - Jongbin's account also hosts part-time teacher Hyejun Lim
+       (Team Up & Solve It, Wed-Thu-Fri): +5 on day3/4/5, +5 videos
+     - Mihee's account also hosts part-timers Juyoung Lee (Taekwondo,
+       Mon-Tue) and Soohyun Woo (Cooking, Tue-Wed): +5 day1, +10 day2,
+       +5 day3, +10 videos
+     Camp days: day1=Mon .. day5=Fri */
   teachers: [
     { name:"Hae-young Chun",    first:"haeyoung",  email:"hyc333@yahoo.com",     photoMax:5,  videoMax:5  },
     { name:"Henry Hongsok",     first:"henry",     email:"hongskwon@gmail.com",  photoMax:5,  videoMax:5  },
     { name:"Ellen Lee",         first:"ellen",     email:"sjsend@hotmail.com",   photoMax:0,  videoMax:0,
       note:"uploads via Kyungchul (couple quota)" },
-    { name:"Jongbin Ym",        first:"jongbin",   email:"benchvue101@gmail.com",photoMax:5,  videoMax:5  },
-    { name:"Mihee Kang",        first:"mihee",     email:"mihekang@gmail.com", photoMax:5,  videoMax:5  },
+    { name:"Jongbin Ym",        first:"jongbin",   email:"benchvue101@gmail.com",
+      photoMax:{day1:5,day2:5,day3:10,day4:10,day5:10}, videoMax:10,
+      note:"+ part-time teacher Hyejun Lim (Wed-Fri)" },
+    { name:"Mihee Kang",        first:"mihee",     email:"mihekang@gmail.com",
+      photoMax:{day1:10,day2:15,day3:10,day4:5,day5:5}, videoMax:15,
+      note:"+ part-time teachers Juyoung Lee (Mon-Tue) & Soohyun Woo (Tue-Wed)" },
     { name:"Kyungchul Lee",     first:"kyungchul", email:"kcsend@gmail.com",     photoMax:10, videoMax:10,
       note:"couple quota with Ellen (10 per day / 10 videos)" }
   ]
@@ -398,12 +410,17 @@ const countPhotosDay=(email,day)=>db.uploads.filter(u=>
 const countVideos=(email)=>db.uploads.filter(u=>
   u.email.toLowerCase()===email.toLowerCase()&&u.type==="video").length;
 
+/* per-day photo limit: number = same every day, object = per-day */
+const photoLimit=(t,day)=>typeof t.photoMax==="object"?(t.photoMax[day]||0):t.photoMax;
+const canUpload=(t)=>CONFIG.photoFolders.some(d=>photoLimit(t,d)>0);
+
 /* next free number: photos numbered per day, videos numbered overall (fills gaps) */
 function nextPhotoNumber(t,day){
   const used=new Set(db.uploads
     .filter(u=>u.email.toLowerCase()===t.email.toLowerCase()&&u.type==="photo"&&u.folder===day)
     .map(u=>{const m=/-(\d+)\./.exec(u.name);return m?parseInt(m[1],10):0;}));
-  for(let n=1;n<=t.photoMax;n++)if(!used.has(n))return n;
+  const lim=photoLimit(t,day);
+  for(let n=1;n<=lim;n++)if(!used.has(n))return n;
   return null;
 }
 function nextVideoNumber(t){
@@ -447,10 +464,11 @@ $("photoInput").addEventListener("change",async e=>{
   for(const f of files){
     try{
       db=await readDb();                                   /* fresh count every file */
-      if(countPhotosDay(me.email,curDay)>=me.photoMax){
-        toast("⚠ "+curDay+" is full ("+me.photoMax+" photos) — other days are still open");break;}
+      const lim=photoLimit(me,curDay);
+      if(countPhotosDay(me.email,curDay)>=lim){
+        toast("⚠ "+curDay+" is full ("+lim+" photos) — other days are still open");break;}
       const n=nextPhotoNumber(me,curDay);
-      if(n==null){toast("⚠ "+curDay+" is full ("+me.photoMax+" photos)");break;}
+      if(n==null){toast("⚠ "+curDay+" is full ("+lim+" photos)");break;}
       $("photoStatus").textContent="Converting "+f.name+" …";
       const w=await toWebp(f);
       const name=me.first+"-"+n+"."+w.ext;
@@ -509,35 +527,37 @@ function renderAll(){
   /* quota box — per-day photo counts + total videos */
   const v=countVideos(me.email);
   let q;
-  if(me.photoMax===0){
+  if(!canUpload(me)){
     q="<span class='warn'>Your uploads go through Kyungchul's account (couple quota: 10 photos per day / 10 videos).</span>";
   }else{
     const parts=CONFIG.photoFolders.map(d=>{
-      const c=countPhotosDay(me.email,d);
-      return d+" <b"+(c>=me.photoMax?" class='warn'":"")+">"+c+"/"+me.photoMax+"</b>";
+      const c=countPhotosDay(me.email,d), lim=photoLimit(me,d);
+      return d+" <b"+(c>=lim?" class='warn'":"")+">"+c+"/"+lim+"</b>";
     });
-    q="Your photos (max "+me.photoMax+" per day) — "+parts.join(" · ")
+    q="Your photos — "+parts.join(" · ")
      +"<br>Your videos — <b"+(v>=me.videoMax?" class='warn'":"")+">"+v+" / "+me.videoMax+"</b>";
   }
   if(me.note)q+="<br><span style='font-size:12px;color:var(--muted)'>"+me.note+"</span>";
   if(isSuper)q+="<br><span style='font-size:12px;color:var(--muted)'>Super admin — you can see and delete every file below.</span>";
   $("quotaBox").innerHTML=q;
 
-  const canUp=me.photoMax>0;
-  const dayFull=canUp&&countPhotosDay(me.email,curDay)>=me.photoMax;
+  const canUp=canUpload(me);
+  const curLim=photoLimit(me,curDay);
+  const dayFull=canUp&&countPhotosDay(me.email,curDay)>=curLim;
   $("photoBtn").disabled=!canUp||dayFull;                 /* only THIS day being full disables the button */
   $("photoBtn").textContent=dayFull?("✕ "+curDay+" is full — pick another day"):"＋ Choose photos to upload";
   $("videoBtn").disabled=!canUp||v>=me.videoMax;
   const ps=$("photoStatus");
   ps.classList.toggle("warn",dayFull);
-  ps.textContent=dayFull?(curDay+" already has "+me.photoMax+" of your photos. day2–day5 may still be open — tap another day above."):"";
+  ps.textContent=dayFull?(curDay+" already has "+curLim+" of your photos. Other days may still be open — tap another day above."):"";
 
-  /* day pills with live counts */
+  /* day pills with live counts (limits can differ per day) */
   $("dayPills").innerHTML=CONFIG.photoFolders.map(d=>{
+    const lim=photoLimit(me,d);
     const c=canUp?countPhotosDay(me.email,d):0;
-    const full=canUp&&c>=me.photoMax;
+    const full=canUp&&c>=lim;
     return "<button data-d='"+d+"' class='"+(d===curDay?"on ":"")+(full?"fullday":"")+"'>"
-      +d.toUpperCase()+(canUp?" · "+c+"/"+me.photoMax:"")+"</button>";
+      +d.toUpperCase()+(canUp?" · "+c+"/"+lim:"")+"</button>";
   }).join("");
   [...$("dayPills").children].forEach(b=>b.addEventListener("click",()=>{curDay=b.dataset.d;renderAll();}));
 
@@ -545,19 +565,20 @@ function renderAll(){
   let rows="<tr><th>Teacher</th><th>Photos per day (d1 · d2 · d3 · d4 · d5)</th><th>Videos</th></tr>";
   for(const t of CONFIG.teachers){
     const meCls=t.email.toLowerCase()===myEmail?" class='me'":"";
-    if(t.photoMax===0){
+    if(!canUpload(t)){
       rows+="<tr"+meCls+"><td><b>"+t.name+"</b> <span style='font-size:11px;color:var(--muted)'>("+t.note+")</span></td>"
         +"<td colspan='2' style='color:var(--muted)'>shared with Kyungchul</td></tr>";
       continue;
     }
     const cells=CONFIG.photoFolders.map(d=>{
-      const c=countPhotosDay(t.email,d);
-      return c>=t.photoMax?"<span class='full'>"+c+"</span>":c;
+      const c=countPhotosDay(t.email,d), lim=photoLimit(t,d);
+      const txt=c+"/"+lim;
+      return c>=lim?"<span class='full'>"+txt+"</span>":txt;
     }).join(" · ");
     const tv=countVideos(t.email);
     rows+="<tr"+meCls+"><td><b>"+t.name+"</b>"
       +(t.note?" <span style='font-size:11px;color:var(--muted)'>("+t.note+")</span>":"")+"</td>"
-      +"<td>"+cells+" <span style='color:var(--muted);font-size:11px'>(max "+t.photoMax+" each)</span></td>"
+      +"<td>"+cells+"</td>"
       +"<td"+(tv>=t.videoMax?" class='full'":"")+">"+tv+" / "+t.videoMax+"</td></tr>";
   }
   $("teacherTable").innerHTML=rows;
