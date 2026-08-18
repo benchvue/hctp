@@ -222,7 +222,7 @@
       <input type="file" id="stuInput" accept="image/*" hidden>
     </div>
     <div class="stu-row">
-      <div><label>새 학생 추가 — first name만 넣어도 됩니다</label>
+      <div><label>명단에 없는 학생만 직접 추가 — first name만 넣어도 됩니다</label>
         <input type="text" id="stuNew" placeholder="예: Luca  또는  Luca Feliciano"></div>
       <button class="mini" id="stuAddBtn" style="padding:10px 16px">명단에 추가</button>
       <button class="btn-plain" id="stuRemoveBtn">선택 학생 명단에서 제거</button>
@@ -805,14 +805,23 @@ async function loadRoster(){
     rosterFileId=created.id;
   }
   let changed=normalizeRoster();
-  const total=CONFIG.teamNames.reduce((a,t)=>a+(roster.teams[t]||[]).length,0);
-  if(total===0){                          /* 명단이 완전히 비어 있으면 기본 명단으로 채움 */
-    roster.teams=JSON.parse(JSON.stringify(DEFAULT_ROSTER));
+  /* 기본 명단(DEFAULT_ROSTER)을 db 명단과 병합 — 최초 1회만.
+     seeded 플래그가 있으면 다시 병합하지 않으므로,
+     이후 [명단에서 제거]한 학생이 되살아나지 않습니다. */
+  if(!roster.seeded){
+    CONFIG.teamNames.forEach(t=>{
+      (DEFAULT_ROSTER[t]||[]).forEach(n=>{
+        const tc=titleCase(n);
+        if(!roster.teams[t].some(x=>x.toLowerCase()===tc.toLowerCase()))
+          roster.teams[t].push(tc);
+      });
+    });
+    roster.seeded=true;
     normalizeRoster();
     changed=true;
   }
   if(changed&&rosterFileId){
-    try{await saveRoster();}catch(e){}    /* 교정/시딩 결과를 db에 저장 */
+    try{await saveRoster();}catch(e){}    /* 교정/병합 결과를 db에 저장 */
   }
 }
 async function saveRoster(){
