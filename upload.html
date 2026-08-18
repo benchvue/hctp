@@ -739,13 +739,35 @@ function cardHtml(u){
 /* ══════════════ 학생/단체 사진 관리 (super admin 전용, 한국어 UI) ══════════════ */
 let stuFiles=[], groupFiles=[];
 let roster={teams:{}}, rosterFileId=null;
+
+/* 명단이 비어 있을 때 자동으로 채워지는 기본 명단 (2026) */
+const DEFAULT_ROSTER={
+  "Coconut":[
+    "Andrra Velillari","Isbella Docatis","RIA KANG","Rayan Bis-Mahmud",
+    "Rudra Vaghasiya","Emma Leah Rojas","Nathalie Pena","Mason Morales",
+    "Aileen An","Alaia Sophia Diaz Torres","Belle Rodriguez","Eileen Kim",
+    "Jacob Ynoa","MATTIA RUSCA","Alexander SUAREZ"
+  ],
+  "Strawberry":[
+    "Riley Thomas","Valentina Oviedo-Vasquez","Ezra Fernandini","Joseph Sargenti",
+    "Maddox Anderson","Noelle Sanchez","Suah Kwon","Giovanni Buscio",
+    "JohnPaul Buscio","Elisha Ha","FRANCISCO SUAREZ","Benjamin Alfaro",
+    "Sara Djuteski","Alex Dushane","Maxim Janevski"
+  ]
+};
 let cropMode="student";            /* 'student' | 'group' */
 
 const slugName=n=>n.toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
-/* 이름을 Camel(Title) 형식으로: "LUCA FELICIANO" / "luca feliciano" -> "Luca Feliciano",
+/* 이름을 Camel(Title) 형식으로: "RIA KANG"/"ria kang" -> "Ria Kang".
+   이미 대소문자가 섞인 단어(JohnPaul, McDonald)는 그대로 보존.
    하이픈/어포스트로피 뒤 글자도 대문자: "hae-young" -> "Hae-Young", "o'brien" -> "O'Brien" */
-const titleCase=n=>n.trim().replace(/\s+/g," ").toLowerCase()
-  .replace(/(^|[\s\-'])([a-z])/g,(m,p,c)=>p+c.toUpperCase());
+const titleCase=n=>n.trim().replace(/\s+/g," ").split(" ").map(w=>
+  w.split("-").map(part=>{
+    if(part===part.toUpperCase()||part===part.toLowerCase())
+      return part.toLowerCase().replace(/(^|')([a-z])/g,(m,a,c)=>a+c.toUpperCase());
+    return part;   /* mixed case — keep as typed */
+  }).join("-")
+).join(" ");
 const stuFileName=(team,full)=>team.toLowerCase()+"-"+slugName(full)+".webp";
 const findStu=(team,full)=>stuFiles.find(f=>f.name===stuFileName(team,full));
 
@@ -782,8 +804,15 @@ async function loadRoster(){
       new Blob([JSON.stringify(roster)]),folderIds[CONFIG.dbFolder]);
     rosterFileId=created.id;
   }
-  if(normalizeRoster()&&rosterFileId){
-    try{await saveRoster();}catch(e){}   /* 기존 대문자 이름 자동 교정 저장 */
+  let changed=normalizeRoster();
+  const total=CONFIG.teamNames.reduce((a,t)=>a+(roster.teams[t]||[]).length,0);
+  if(total===0){                          /* 명단이 완전히 비어 있으면 기본 명단으로 채움 */
+    roster.teams=JSON.parse(JSON.stringify(DEFAULT_ROSTER));
+    normalizeRoster();
+    changed=true;
+  }
+  if(changed&&rosterFileId){
+    try{await saveRoster();}catch(e){}    /* 교정/시딩 결과를 db에 저장 */
   }
 }
 async function saveRoster(){
