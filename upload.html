@@ -742,6 +742,10 @@ let roster={teams:{}}, rosterFileId=null;
 let cropMode="student";            /* 'student' | 'group' */
 
 const slugName=n=>n.toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+/* 이름을 Camel(Title) 형식으로: "LUCA FELICIANO" / "luca feliciano" -> "Luca Feliciano",
+   하이픈/어포스트로피 뒤 글자도 대문자: "hae-young" -> "Hae-Young", "o'brien" -> "O'Brien" */
+const titleCase=n=>n.trim().replace(/\s+/g," ").toLowerCase()
+  .replace(/(^|[\s\-'])([a-z])/g,(m,p,c)=>p+c.toUpperCase());
 const stuFileName=(team,full)=>team.toLowerCase()+"-"+slugName(full)+".webp";
 const findStu=(team,full)=>stuFiles.find(f=>f.name===stuFileName(team,full));
 
@@ -749,7 +753,21 @@ const findStu=(team,full)=>stuFiles.find(f=>f.name===stuFileName(team,full));
 function normalizeRoster(){
   if(!roster||typeof roster!=="object")roster={teams:{}};
   if(!roster.teams)roster.teams={};
-  CONFIG.teamNames.forEach(t=>{if(!Array.isArray(roster.teams[t]))roster.teams[t]=[];});
+  let changed=false;
+  CONFIG.teamNames.forEach(t=>{
+    if(!Array.isArray(roster.teams[t])){roster.teams[t]=[];return;}
+    const fixed=[];
+    roster.teams[t].forEach(n=>{
+      const tc=titleCase(String(n));
+      if(tc!==n)changed=true;
+      if(!fixed.some(x=>x.toLowerCase()===tc.toLowerCase()))fixed.push(tc);
+      else changed=true;
+    });
+    fixed.sort((a,b)=>a.toLowerCase()<b.toLowerCase()?-1:1);
+    if(JSON.stringify(fixed)!==JSON.stringify(roster.teams[t]))changed=true;
+    roster.teams[t]=fixed;
+  });
+  return changed;
 }
 async function loadRoster(){
   const kids=await listChildren(folderIds[CONFIG.dbFolder]);
@@ -764,7 +782,9 @@ async function loadRoster(){
       new Blob([JSON.stringify(roster)]),folderIds[CONFIG.dbFolder]);
     rosterFileId=created.id;
   }
-  normalizeRoster();
+  if(normalizeRoster()&&rosterFileId){
+    try{await saveRoster();}catch(e){}   /* 기존 대문자 이름 자동 교정 저장 */
+  }
 }
 async function saveRoster(){
   const r=await fetch("https://www.googleapis.com/upload/drive/v3/files/"+rosterFileId+"?uploadType=media",
@@ -836,7 +856,7 @@ $("stuName").addEventListener("change",renderStudents);
 
 /* 명단 추가 / 제거 */
 $("stuAddBtn").addEventListener("click",async()=>{
-  const name=$("stuNew").value.trim(), team=$("stuTeam").value;
+  const name=titleCase($("stuNew").value), team=$("stuTeam").value;
   if(!name)return toast("이름을 입력하세요 (first name만도 가능)");
   if(roster.teams[team].some(n=>n.toLowerCase()===name.toLowerCase()))
     return toast("이미 명단에 있습니다");
