@@ -262,6 +262,23 @@
     color: var(--muted);
   }
 
+  /* ── Camp Teams (학생 얼굴 그리드) ────── */
+  .teams{max-width:760px;margin:0 auto;padding:10px clamp(18px,4vw,40px) 6px}
+  .team-block{margin-bottom:30px}
+  .team-name{
+    font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:400;
+    font-size:22px;color:var(--gold);text-align:center;letter-spacing:.12em;margin-bottom:16px}
+  .stu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));
+    gap:16px 10px;justify-items:center}
+  .stu-card{border:none;background:none;cursor:pointer;text-align:center;
+    -webkit-tap-highlight-color:transparent;padding:0}
+  .stu-thumb{display:block;width:72px;height:72px;border-radius:50%;overflow:hidden;
+    border:2px solid var(--gold-dim);box-shadow:0 8px 18px -10px rgba(90,70,30,.55);margin:0 auto;
+    background:var(--bg-soft)}
+  .stu-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .stu-name{display:block;margin-top:7px;font-size:12px;color:var(--ink);letter-spacing:.03em}
+  .lightbox.solo .lb-caption{display:block}
+
   /* ── 비디오 카드 ─────────────────────── */
   .video-gallery{
     display: grid;
@@ -494,6 +511,13 @@
   </div>
 </div>
 
+<!-- ══════════ Camp Teams ══════════ -->
+<div class="section-head" id="teamsHead" style="display:none">
+  <h2 class="section-title">Camp Teams</h2>
+  <p class="section-sub">tap a face to see the full photo</p>
+</div>
+<section class="teams" id="teamsRoot" style="display:none"></section>
+
 <!-- ══════════ 캠프 사진 (Day 1–5) ══════════ -->
 <div class="section-head">
   <p class="section-eyebrow" id="campEyebrow">Summer Camp</p>
@@ -680,6 +704,15 @@
       lbImg.classList.add("active");
       lbCap.textContent = this.imgCtrl.label + " · " + (this.imgCtrl.idx + 1) + " / " + this.imgCtrl.length;
     },
+    openSolo(src, caption){
+      this.imgCtrl=null;
+      this.open=true;
+      lbVideo.classList.remove("active");
+      lightbox.classList.add("open","solo");
+      lbImg.src=src;
+      lbImg.classList.add("active");
+      lbCap.textContent=caption;
+    },
     openVideo(src){
       this.imgCtrl = null;
       this.open = true;
@@ -694,7 +727,7 @@
     close(){
       this.open = false;
       this.imgCtrl = null;
-      lightbox.classList.remove("open", "img-mode");
+      lightbox.classList.remove("open", "img-mode", "solo");
       lbVideo.pause();
       lbVideo.removeAttribute("src");
       lbVideo.load();
@@ -886,6 +919,49 @@
     });
   }
 
+  /* ══════════════ Camp Teams (팀별 학생 사진) ══════════════ */
+  const cap = w => w ? w.charAt(0).toUpperCase() + w.slice(1) : "";
+
+  function buildTeams(year){
+    const head = document.getElementById("teamsHead");
+    const root = document.getElementById("teamsRoot");
+    const files = arr(yearData(year).students).filter(f => IMG_EXT.test(f));
+    if (!files.length){ head.style.display="none"; root.style.display="none"; root.innerHTML=""; return; }
+    head.style.display=""; root.style.display=""; root.innerHTML="";
+
+    /* 파일명 규칙: team-first-last.webp → 팀별로 묶기 */
+    const groups = {};
+    files.forEach(f => {
+      const parts = f.replace(/\.[^.]+$/, "").split("-");
+      const team = cap(parts[0] || "team");
+      (groups[team] = groups[team] || []).push({ file: f, names: parts.slice(1) });
+    });
+
+    Object.keys(groups).sort().forEach(team => {
+      const block = document.createElement("div");
+      block.className = "team-block";
+      block.innerHTML = "<h3 class='team-name'>Team " + team + "</h3>";
+      const grid = document.createElement("div");
+      grid.className = "stu-grid";
+      groups[team]
+        .sort((a,b) => (a.names[0]||"") < (b.names[0]||"") ? -1 : 1)
+        .forEach(st => {
+          const first = cap(st.names[0] || "");
+          const full  = st.names.map(cap).join(" ");
+          const src   = year + "/students/" + encodeURIComponent(st.file);
+          const b = document.createElement("button");
+          b.className = "stu-card";
+          b.innerHTML = "<span class='stu-thumb'><img loading='lazy' decoding='async' alt='" + full + "'></span>"
+                      + "<span class='stu-name'>" + first + "</span>";
+          b.querySelector("img").src = src;
+          b.addEventListener("click", () => lb.openSolo(src, full + " · Team " + team));
+          grid.appendChild(b);
+        });
+      block.appendChild(grid);
+      root.appendChild(block);
+    });
+  }
+
   /* ══════════════ 연도 토글 + 전체 빌드 ══════════════ */
   function buildYearToggle(){
     const wrap = document.getElementById("yearToggle");
@@ -919,6 +995,7 @@
     });
 
     buildVideos(curYear);
+    buildTeams(curYear);
   }
 
   if (!Object.keys(FILES).length){

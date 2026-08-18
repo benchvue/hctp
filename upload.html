@@ -98,6 +98,35 @@
   .empty-note{font-size:12px;color:var(--muted);padding:8px 2px}
   .busy{opacity:.45;pointer-events:none}
 
+  /* ── 학생 사진 관리 (super admin) ── */
+  #studentAdmin{display:none}
+  .stu-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+  .stu-row label{font-size:11.5px;color:var(--muted);display:block;margin-bottom:4px}
+  .stu-row select{font-family:inherit;font-size:13.5px;padding:9px 12px;border:1px solid var(--line);
+    border-radius:10px;background:#fff;color:var(--ink);min-width:170px}
+  .stu-cur{display:flex;gap:12px;align-items:center;font-size:12.5px;color:var(--muted)}
+  .stu-cur img{width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--gold)}
+  .crop-stage{position:relative;max-width:640px;margin:4px 0;background:#2c2c2a;border-radius:12px;
+    overflow:hidden;touch-action:none;user-select:none}
+  .crop-stage img{display:block;width:100%;height:auto;pointer-events:none;-webkit-user-drag:none}
+  .crop-box{position:absolute;border:2px solid var(--gold-soft);cursor:move;touch-action:none;
+    box-shadow:0 0 0 9999px rgba(20,16,10,.55)}
+  /* 8방향 손잡이 — 모서리 4 + 변 4 (camino 방식) */
+  .ch{position:absolute;width:14px;height:14px;background:#fff;border:2px solid var(--gold);
+    border-radius:3px;touch-action:none}
+  .ch.nw{left:-8px;top:-8px;cursor:nwse-resize}   .ch.ne{right:-8px;top:-8px;cursor:nesw-resize}
+  .ch.sw{left:-8px;bottom:-8px;cursor:nesw-resize}.ch.se{right:-8px;bottom:-8px;cursor:nwse-resize}
+  .ch.n{left:50%;top:-8px;margin-left:-7px;cursor:ns-resize}
+  .ch.s{left:50%;bottom:-8px;margin-left:-7px;cursor:ns-resize}
+  .ch.w{left:-8px;top:50%;margin-top:-7px;cursor:ew-resize}
+  .ch.e{right:-8px;top:50%;margin-top:-7px;cursor:ew-resize}
+  .crop-btns{display:flex;gap:8px;flex-wrap:wrap}
+  .btn-gold{border:1px solid var(--gold);border-radius:999px;background:var(--gold);color:#fff;
+    font-size:13px;padding:9px 20px}
+  .btn-gold:disabled{opacity:.5}
+  .btn-plain{border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--muted);
+    font-size:13px;padding:9px 20px}
+
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
     background:var(--ink);color:#fff;font-size:13px;padding:11px 20px;border-radius:999px;
     opacity:0;pointer-events:none;transition:all .25s ease;z-index:99;max-width:92vw;text-align:center}
@@ -172,6 +201,41 @@
   <div id="videoRoot"></div>
 </div>
 
+<!-- 학생 사진 관리 — super admin에게만 표시 -->
+<div class="panel" id="studentAdmin" style="padding-top:0">
+  <h2 class="sec">학생 사진 관리 <small>· super admin 전용 · 뷰어의 Camp Teams 섹션에 표시됩니다</small></h2>
+  <div class="upwrap card">
+    <div class="stu-row">
+      <div><label>팀</label><select id="stuTeam"></select></div>
+      <div><label>학생 (전체 이름)</label><select id="stuName"></select></div>
+      <button class="mini" id="stuPickBtn" style="padding:10px 16px">사진 선택 (JPG)</button>
+      <input type="file" id="stuInput" accept="image/*" hidden>
+    </div>
+    <div class="stu-cur" id="stuCurrent"></div>
+
+    <div id="cropArea" style="display:none">
+      <div class="hintline">얼굴 부분에 네모를 맞춰 주세요 — 네모를 <b>끌면 이동</b>,
+        8개 손잡이를 끌면 <b>크기 조절</b>됩니다. 업로드 시 WebP로 변환됩니다.</div>
+      <div class="crop-stage" id="cropStage">
+        <img id="cropImg" alt="crop source">
+        <div class="crop-box" id="cropBox">
+          <div class="ch nw"></div><div class="ch n"></div><div class="ch ne"></div>
+          <div class="ch e"></div><div class="ch se"></div><div class="ch s"></div>
+          <div class="ch sw"></div><div class="ch w"></div>
+        </div>
+      </div>
+      <div class="crop-btns">
+        <button class="btn-gold" id="cropUpload">잘라서 업로드 (등록/교체)</button>
+        <button class="btn-plain" id="cropCancel">취소</button>
+      </div>
+    </div>
+    <div class="status" id="stuStatus"></div>
+
+    <h2 class="sec" style="font-size:16px;margin:6px 0 0">등록된 학생 사진</h2>
+    <div class="pgrid" id="stuGrid"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <div class="lb" id="lb"><button class="x" id="lbX">✕</button><img id="lbImg" alt="preview"></div>
 
@@ -192,6 +256,19 @@ const CONFIG = {
   webpMaxDim: 1600,
 
   superAdmin: "benchvue101@gmail.com",
+
+  /* 학생 사진 (super admin 전용) — Drive "students" 폴더,
+     파일명: 팀-이름.webp (예: coconut-luca-feliciano.webp) */
+  studentsFolder: "students",
+  teams: {
+    "Coconut": [
+      "Luca Feliciano"
+      /* , "Full Name" ... 명단을 여기에 추가하세요 */
+    ],
+    "Strawberry": [
+      /* "Full Name", ... */
+    ]
+  },
 
   /* Quotas: photoMax = PER DAY. A number means the same limit every day;
      an object {day1:..,day5:..} sets a different limit per day.
@@ -400,6 +477,18 @@ async function loadAll(){
     driveFiles.forEach(x=>window._driveMeta[x.file.id]=x.file);
 
     renderAll();
+
+    /* 학생 사진 관리 — super admin 전용 */
+    if(isSuper){
+      if(!folderIds[CONFIG.studentsFolder]){
+        const nf=await createFolder(CONFIG.studentsFolder,CONFIG.rootFolder);
+        folderIds[CONFIG.studentsFolder]=nf.id;
+      }
+      document.getElementById("studentAdmin").style.display="block";
+      await loadStudents();
+      renderStudents();
+    }
+
     toast("Loaded ✓");
   }catch(e){toast("⚠ "+e.message);}
 }
@@ -630,6 +719,164 @@ function cardHtml(u){
     +(canDel?"<div class='pbtns'><button class='del'>Delete</button></div>":"")
     +"</div>";
 }
+
+/* ══════════════ 학생 사진 관리 (super admin 전용, 한국어 UI) ══════════════ */
+let stuFiles=[];   /* Drive students 폴더 파일 {id,name,thumbnailLink} */
+const slugName=n=>n.toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+const stuFileName=(team,full)=>team.toLowerCase()+"-"+slugName(full)+".webp";
+const findStu=(team,full)=>stuFiles.find(f=>f.name===stuFileName(team,full));
+
+async function loadStudents(){
+  stuFiles=await listChildren(folderIds[CONFIG.studentsFolder],
+    " and mimeType!='application/vnd.google-apps.folder'");
+}
+
+function renderStudents(){
+  const teamSel=$("stuTeam"), nameSel=$("stuName");
+  const teams=Object.keys(CONFIG.teams);
+  if(!teamSel.options.length)
+    teamSel.innerHTML=teams.map(t=>"<option>"+t+"</option>").join("");
+  const team=teamSel.value||teams[0];
+  const roster=CONFIG.teams[team]||[];
+  const keep=nameSel.value;
+  nameSel.innerHTML=roster.length
+    ? roster.map(n=>"<option value=\""+n+"\">"+n+(findStu(team,n)?" ✓":"")+"</option>").join("")
+    : "<option value=''>(명단 없음 — CONFIG.teams에 추가)</option>";
+  if(keep&&roster.includes(keep))nameSel.value=keep;
+
+  /* 현재 선택된 학생의 등록 사진 */
+  const cur=$("stuCurrent"), full=nameSel.value, ex=full?findStu(team,full):null;
+  if(ex){
+    cur.innerHTML="<img id='stuCurImg' alt='현재 사진'> <span>등록됨: <b>"+ex.name+
+      "</b></span> <button class='del' id='stuDel'>삭제</button>";
+    setDriveImg(cur.querySelector("#stuCurImg"),ex.id,160,ex.thumbnailLink);
+    cur.querySelector("#stuDel").addEventListener("click",async()=>{
+      if(!confirm(full+" 사진을 삭제할까요?"))return;
+      try{
+        await deleteDriveFile(ex.id,folderIds[CONFIG.studentsFolder]);
+        await loadStudents();renderStudents();toast("삭제 완료 ✓");
+      }catch(e){toast("⚠ "+e.message);}
+    });
+  }else cur.innerHTML=full?"<span>아직 등록된 사진이 없습니다.</span>":"";
+
+  /* 전체 그리드 */
+  const grid=$("stuGrid");
+  grid.innerHTML=stuFiles.length?"":"<p class='empty-note'>등록된 학생 사진이 없습니다.</p>";
+  stuFiles.slice().sort((a,b)=>a.name<b.name?-1:1).forEach(f=>{
+    const div=document.createElement("div");div.className="pcard";
+    div.innerHTML="<div class='pimg'><img alt='"+f.name+"'></div>"+
+      "<div class='pname'>"+f.name+"</div>"+
+      "<div class='pbtns'><button class='del'>삭제</button></div>";
+    setDriveImg(div.querySelector("img"),f.id,300,f.thumbnailLink);
+    div.querySelector(".pimg").addEventListener("click",()=>{
+      $("lbImg").src="https://drive.google.com/thumbnail?id="+f.id+"&sz=w1200";
+      $("lb").classList.add("show");
+    });
+    div.querySelector(".del").addEventListener("click",async()=>{
+      if(!confirm(f.name+" 삭제할까요?"))return;
+      try{
+        await deleteDriveFile(f.id,folderIds[CONFIG.studentsFolder]);
+        await loadStudents();renderStudents();toast("삭제 완료 ✓");
+      }catch(e){toast("⚠ "+e.message);}
+    });
+    grid.appendChild(div);
+  });
+}
+$("stuTeam").addEventListener("change",renderStudents);
+$("stuName").addEventListener("change",renderStudents);
+
+/* ── 크롭 UI: 이동 + 8방향 손잡이 ── */
+let cb={x:40,y:40,w:200,h:200}, cropDrag=null;
+const stage=$("cropStage"), cropImg=$("cropImg"), cropBox=$("cropBox");
+
+function paintBox(){
+  cropBox.style.left=cb.x+"px";cropBox.style.top=cb.y+"px";
+  cropBox.style.width=cb.w+"px";cropBox.style.height=cb.h+"px";
+}
+function clampBox(){
+  const W=cropImg.clientWidth,H=cropImg.clientHeight,MIN=40;
+  cb.w=Math.max(MIN,Math.min(cb.w,W));cb.h=Math.max(MIN,Math.min(cb.h,H));
+  cb.x=Math.max(0,Math.min(cb.x,W-cb.w));cb.y=Math.max(0,Math.min(cb.y,H-cb.h));
+}
+cropBox.addEventListener("pointerdown",e=>{
+  e.preventDefault();
+  const h=e.target.classList.contains("ch")?e.target.classList[1]:"move";
+  cropDrag={mode:h,sx:e.clientX,sy:e.clientY,o:{...cb}};
+  cropBox.setPointerCapture(e.pointerId);
+});
+cropBox.addEventListener("pointermove",e=>{
+  if(!cropDrag)return;
+  const dx=e.clientX-cropDrag.sx, dy=e.clientY-cropDrag.sy, o=cropDrag.o, m=cropDrag.mode;
+  if(m==="move"){cb.x=o.x+dx;cb.y=o.y+dy;}
+  else{
+    if(m.includes("w")){cb.x=o.x+dx;cb.w=o.w-dx;}
+    if(m.includes("e")){cb.w=o.w+dx;}
+    if(m.includes("n")){cb.y=o.y+dy;cb.h=o.h-dy;}
+    if(m.includes("s")){cb.h=o.h+dy;}
+  }
+  clampBox();paintBox();
+});
+const endDrag=()=>{cropDrag=null;};
+cropBox.addEventListener("pointerup",endDrag);
+cropBox.addEventListener("pointercancel",endDrag);
+
+let stuSrcFile=null;
+$("stuPickBtn").addEventListener("click",()=>{
+  if(!$("stuName").value)return toast("먼저 팀과 학생을 선택하세요");
+  $("stuInput").click();
+});
+$("stuInput").addEventListener("change",async e=>{
+  const f=e.target.files[0];e.target.value="";
+  if(!f)return;
+  try{
+    const img=await loadImage(f);      /* HEIC 미지원 PC면 여기서 안내 */
+    stuSrcFile=img;
+    cropImg.src=img.src||"";           /* loadImage revokes url — 다시 그린다 */
+    /* loadImage가 URL을 해제하므로 새 objectURL로 표시 */
+    cropImg.src=URL.createObjectURL(f);
+    await new Promise(r=>{cropImg.onload=r;});
+    $("cropArea").style.display="block";
+    const W=cropImg.clientWidth,H=cropImg.clientHeight,sz=Math.min(W,H)*0.6;
+    cb={x:(W-sz)/2,y:(H-sz)/2,w:sz,h:sz};
+    paintBox();
+    stuSrcFile={img:cropImg,file:f};
+  }catch(err){toast("⚠ "+err.message);}
+});
+$("cropCancel").addEventListener("click",()=>{
+  $("cropArea").style.display="none";stuSrcFile=null;
+});
+$("cropUpload").addEventListener("click",async()=>{
+  if(!stuSrcFile)return;
+  const team=$("stuTeam").value, full=$("stuName").value;
+  if(!full)return toast("학생을 선택하세요");
+  const btn=$("cropUpload");btn.disabled=true;
+  try{
+    $("stuStatus").textContent="자르는 중 …";
+    const im=stuSrcFile.img;
+    const scale=im.naturalWidth/im.clientWidth;
+    const sx=cb.x*scale, sy=cb.y*scale, sw=cb.w*scale, sh=cb.h*scale;
+    const outW=Math.min(800,Math.round(sw)), outH=Math.round(outW*sh/sw);
+    const c=document.createElement("canvas");c.width=outW;c.height=outH;
+    c.getContext("2d").drawImage(im,sx,sy,sw,sh,0,0,outW,outH);
+    let blob=await new Promise(r=>c.toBlob(r,"image/webp",0.85));
+    if(!blob||blob.type!=="image/webp")
+      blob=await new Promise(r=>c.toBlob(r,"image/jpeg",0.85));
+    const fname=stuFileName(team,full);
+    $("stuStatus").textContent=fname+" 업로드 중 …";
+    const ex=findStu(team,full);
+    if(ex){ /* 같은 파일 ID에 내용만 교체 → 뷰어 파일명 유지 */
+      const r=await fetch("https://www.googleapis.com/upload/drive/v3/files/"+ex.id+"?uploadType=media",
+        {method:"PATCH",headers:Object.assign({"Content-Type":blob.type},authHeaders()),body:blob});
+      if(!r.ok)throw new Error("교체 실패 ("+r.status+")");
+    }else{
+      await uploadBlob(fname,blob.type,blob,folderIds[CONFIG.studentsFolder]);
+    }
+    $("cropArea").style.display="none";stuSrcFile=null;$("stuStatus").textContent="";
+    await loadStudents();renderStudents();
+    toast(full+" 사진 "+(ex?"교체":"등록")+" 완료 ✓");
+  }catch(e){$("stuStatus").textContent="";toast("⚠ "+e.message);}
+  btn.disabled=false;
+});
 
 /* lightbox */
 $("lbX").addEventListener("click",()=>$("lb").classList.remove("show"));
