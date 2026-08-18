@@ -102,8 +102,8 @@
   #studentAdmin{display:none}
   .stu-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
   .stu-row label{font-size:11.5px;color:var(--muted);display:block;margin-bottom:4px}
-  .stu-row select{font-family:inherit;font-size:13.5px;padding:9px 12px;border:1px solid var(--line);
-    border-radius:10px;background:#fff;color:var(--ink);min-width:170px}
+  .stu-row select,.stu-row input[type=text]{font-family:inherit;font-size:13.5px;padding:9px 12px;
+    border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);min-width:170px}
   .stu-cur{display:flex;gap:12px;align-items:center;font-size:12.5px;color:var(--muted)}
   .stu-cur img{width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--gold)}
   .crop-stage{position:relative;max-width:640px;margin:4px 0;background:#2c2c2a;border-radius:12px;
@@ -201,38 +201,55 @@
   <div id="videoRoot"></div>
 </div>
 
-<!-- 학생 사진 관리 — super admin에게만 표시 -->
+<!-- 학생/단체 사진 관리 — super admin에게만 표시 -->
 <div class="panel" id="studentAdmin" style="padding-top:0">
-  <h2 class="sec">학생 사진 관리 <small>· super admin 전용 · 뷰어의 Camp Teams 섹션에 표시됩니다</small></h2>
+
+  <h2 class="sec">단체 사진 관리 <small>· super admin 전용 · 뷰어 맨 위(About 위)에 표시</small></h2>
+  <div class="upwrap card">
+    <div class="crop-btns">
+      <button class="mini" id="grpPickBtn" style="padding:10px 16px">단체 사진 선택 (JPG)</button>
+    </div>
+    <div class="hintline">여러 장 가능 (최대 5장) · 바꾸려면 기존 사진을 삭제하고 새로 올리세요.</div>
+    <div class="pgrid" id="grpGrid"></div>
+  </div>
+
+  <h2 class="sec">학생 사진 관리 <small>· super admin 전용 · 뷰어 Camp Teams 섹션에 표시</small></h2>
   <div class="upwrap card">
     <div class="stu-row">
       <div><label>팀</label><select id="stuTeam"></select></div>
-      <div><label>학생 (전체 이름)</label><select id="stuName"></select></div>
+      <div><label>학생</label><select id="stuName"></select></div>
       <button class="mini" id="stuPickBtn" style="padding:10px 16px">사진 선택 (JPG)</button>
       <input type="file" id="stuInput" accept="image/*" hidden>
     </div>
-    <div class="stu-cur" id="stuCurrent"></div>
-
-    <div id="cropArea" style="display:none">
-      <div class="hintline">얼굴 부분에 네모를 맞춰 주세요 — 네모를 <b>끌면 이동</b>,
-        8개 손잡이를 끌면 <b>크기 조절</b>됩니다. 업로드 시 WebP로 변환됩니다.</div>
-      <div class="crop-stage" id="cropStage">
-        <img id="cropImg" alt="crop source">
-        <div class="crop-box" id="cropBox">
-          <div class="ch nw"></div><div class="ch n"></div><div class="ch ne"></div>
-          <div class="ch e"></div><div class="ch se"></div><div class="ch s"></div>
-          <div class="ch sw"></div><div class="ch w"></div>
-        </div>
-      </div>
-      <div class="crop-btns">
-        <button class="btn-gold" id="cropUpload">잘라서 업로드 (등록/교체)</button>
-        <button class="btn-plain" id="cropCancel">취소</button>
-      </div>
+    <div class="stu-row">
+      <div><label>새 학생 추가 — first name만 넣어도 됩니다</label>
+        <input type="text" id="stuNew" placeholder="예: Luca  또는  Luca Feliciano"></div>
+      <button class="mini" id="stuAddBtn" style="padding:10px 16px">명단에 추가</button>
+      <button class="btn-plain" id="stuRemoveBtn">선택 학생 명단에서 제거</button>
     </div>
+    <div class="stu-cur" id="stuCurrent"></div>
     <div class="status" id="stuStatus"></div>
 
     <h2 class="sec" style="font-size:16px;margin:6px 0 0">등록된 학생 사진</h2>
     <div class="pgrid" id="stuGrid"></div>
+  </div>
+
+  <h2 class="sec" id="cropTitle" style="display:none">사진 자르기</h2>
+  <div class="upwrap card" id="cropArea" style="display:none">
+    <div class="hintline">얼굴/원하는 부분에 네모를 맞춰 주세요 — 네모를 <b>끌면 이동</b>,
+      8개 손잡이를 끌면 <b>크기 조절</b>됩니다. 업로드 시 WebP로 변환됩니다.</div>
+    <div class="crop-stage" id="cropStage">
+      <img id="cropImg" alt="crop source">
+      <div class="crop-box" id="cropBox">
+        <div class="ch nw"></div><div class="ch n"></div><div class="ch ne"></div>
+        <div class="ch e"></div><div class="ch se"></div><div class="ch s"></div>
+        <div class="ch sw"></div><div class="ch w"></div>
+      </div>
+    </div>
+    <div class="crop-btns">
+      <button class="btn-gold" id="cropUpload">잘라서 업로드</button>
+      <button class="btn-plain" id="cropCancel">취소</button>
+    </div>
   </div>
 </div>
 
@@ -257,18 +274,15 @@ const CONFIG = {
 
   superAdmin: "benchvue101@gmail.com",
 
-  /* 학생 사진 (super admin 전용) — Drive "students" 폴더,
-     파일명: 팀-이름.webp (예: coconut-luca-feliciano.webp) */
+  /* 학생/단체 사진 (super admin 전용)
+     - 학생 사진: Drive "students" 폴더, 파일명 팀-이름.webp
+     - 학생 명단: Drive db/hctp-2026-roster.json — 업로드 페이지에서 직접 추가/제거
+     - 단체 사진: Drive "group" 폴더, group-N.webp (뷰어 About 위에 표시) */
   studentsFolder: "students",
-  teams: {
-    "Coconut": [
-      "Luca Feliciano"
-      /* , "Full Name" ... 명단을 여기에 추가하세요 */
-    ],
-    "Strawberry": [
-      /* "Full Name", ... */
-    ]
-  },
+  groupFolder: "group",
+  groupMax: 5,
+  rosterFileName: "hctp-2026-roster.json",
+  teamNames: ["Coconut","Strawberry"],
 
   /* Quotas: photoMax = PER DAY. A number means the same limit every day;
      an object {day1:..,day5:..} sets a different limit per day.
@@ -478,15 +492,17 @@ async function loadAll(){
 
     renderAll();
 
-    /* 학생 사진 관리 — super admin 전용 */
+    /* 학생/단체 사진 관리 — super admin 전용 */
     if(isSuper){
-      if(!folderIds[CONFIG.studentsFolder]){
-        const nf=await createFolder(CONFIG.studentsFolder,CONFIG.rootFolder);
-        folderIds[CONFIG.studentsFolder]=nf.id;
+      for(const n of [CONFIG.studentsFolder,CONFIG.groupFolder]){
+        if(!folderIds[n]){const nf=await createFolder(n,CONFIG.rootFolder);folderIds[n]=nf.id;}
       }
       document.getElementById("studentAdmin").style.display="block";
+      await loadRoster();
       await loadStudents();
+      await loadGroup();
       renderStudents();
+      renderGroup();
     }
 
     toast("Loaded ✓");
@@ -720,35 +736,69 @@ function cardHtml(u){
     +"</div>";
 }
 
-/* ══════════════ 학생 사진 관리 (super admin 전용, 한국어 UI) ══════════════ */
-let stuFiles=[];   /* Drive students 폴더 파일 {id,name,thumbnailLink} */
+/* ══════════════ 학생/단체 사진 관리 (super admin 전용, 한국어 UI) ══════════════ */
+let stuFiles=[], groupFiles=[];
+let roster={teams:{}}, rosterFileId=null;
+let cropMode="student";            /* 'student' | 'group' */
+
 const slugName=n=>n.toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
 const stuFileName=(team,full)=>team.toLowerCase()+"-"+slugName(full)+".webp";
 const findStu=(team,full)=>stuFiles.find(f=>f.name===stuFileName(team,full));
+
+/* ── 명단(roster): db/hctp-2026-roster.json ── */
+function normalizeRoster(){
+  if(!roster||typeof roster!=="object")roster={teams:{}};
+  if(!roster.teams)roster.teams={};
+  CONFIG.teamNames.forEach(t=>{if(!Array.isArray(roster.teams[t]))roster.teams[t]=[];});
+}
+async function loadRoster(){
+  const kids=await listChildren(folderIds[CONFIG.dbFolder]);
+  const f=kids.find(x=>x.name===CONFIG.rosterFileName);
+  if(f){
+    rosterFileId=f.id;
+    try{roster=await gFetch("https://www.googleapis.com/drive/v3/files/"+f.id+"?alt=media");}
+    catch(e){roster={teams:{}};}
+  }else{
+    roster={teams:{}};normalizeRoster();
+    const created=await uploadBlob(CONFIG.rosterFileName,"application/json",
+      new Blob([JSON.stringify(roster)]),folderIds[CONFIG.dbFolder]);
+    rosterFileId=created.id;
+  }
+  normalizeRoster();
+}
+async function saveRoster(){
+  const r=await fetch("https://www.googleapis.com/upload/drive/v3/files/"+rosterFileId+"?uploadType=media",
+    {method:"PATCH",headers:Object.assign({"Content-Type":"application/json"},authHeaders()),
+     body:JSON.stringify(roster)});
+  if(!r.ok)throw new Error("명단 저장 실패 ("+r.status+")");
+}
 
 async function loadStudents(){
   stuFiles=await listChildren(folderIds[CONFIG.studentsFolder],
     " and mimeType!='application/vnd.google-apps.folder'");
 }
+async function loadGroup(){
+  groupFiles=await listChildren(folderIds[CONFIG.groupFolder],
+    " and mimeType!='application/vnd.google-apps.folder'");
+}
 
+/* ── 학생 UI ── */
 function renderStudents(){
   const teamSel=$("stuTeam"), nameSel=$("stuName");
-  const teams=Object.keys(CONFIG.teams);
   if(!teamSel.options.length)
-    teamSel.innerHTML=teams.map(t=>"<option>"+t+"</option>").join("");
-  const team=teamSel.value||teams[0];
-  const roster=CONFIG.teams[team]||[];
+    teamSel.innerHTML=CONFIG.teamNames.map(t=>"<option>"+t+"</option>").join("");
+  const team=teamSel.value||CONFIG.teamNames[0];
+  const list=roster.teams[team]||[];
   const keep=nameSel.value;
-  nameSel.innerHTML=roster.length
-    ? roster.map(n=>"<option value=\""+n+"\">"+n+(findStu(team,n)?" ✓":"")+"</option>").join("")
-    : "<option value=''>(명단 없음 — CONFIG.teams에 추가)</option>";
-  if(keep&&roster.includes(keep))nameSel.value=keep;
+  nameSel.innerHTML=list.length
+    ? list.map(n=>"<option value=\""+n.replace(/"/g,"&quot;")+"\">"+n+(findStu(team,n)?" ✓":"")+"</option>").join("")
+    : "<option value=''>(명단 없음 — 아래에서 추가)</option>";
+  if(keep&&list.includes(keep))nameSel.value=keep;
 
-  /* 현재 선택된 학생의 등록 사진 */
   const cur=$("stuCurrent"), full=nameSel.value, ex=full?findStu(team,full):null;
   if(ex){
     cur.innerHTML="<img id='stuCurImg' alt='현재 사진'> <span>등록됨: <b>"+ex.name+
-      "</b></span> <button class='del' id='stuDel'>삭제</button>";
+      "</b></span> <button class='del' id='stuDel'>사진 삭제</button>";
     setDriveImg(cur.querySelector("#stuCurImg"),ex.id,160,ex.thumbnailLink);
     cur.querySelector("#stuDel").addEventListener("click",async()=>{
       if(!confirm(full+" 사진을 삭제할까요?"))return;
@@ -757,9 +807,8 @@ function renderStudents(){
         await loadStudents();renderStudents();toast("삭제 완료 ✓");
       }catch(e){toast("⚠ "+e.message);}
     });
-  }else cur.innerHTML=full?"<span>아직 등록된 사진이 없습니다.</span>":"";
+  }else cur.innerHTML=full?"<span>아직 등록된 사진이 없습니다 — [사진 선택]으로 올려주세요.</span>":"";
 
-  /* 전체 그리드 */
   const grid=$("stuGrid");
   grid.innerHTML=stuFiles.length?"":"<p class='empty-note'>등록된 학생 사진이 없습니다.</p>";
   stuFiles.slice().sort((a,b)=>a.name<b.name?-1:1).forEach(f=>{
@@ -785,8 +834,72 @@ function renderStudents(){
 $("stuTeam").addEventListener("change",renderStudents);
 $("stuName").addEventListener("change",renderStudents);
 
-/* ── 크롭 UI: 이동 + 8방향 손잡이 ── */
-let cb={x:40,y:40,w:200,h:200}, cropDrag=null;
+/* 명단 추가 / 제거 */
+$("stuAddBtn").addEventListener("click",async()=>{
+  const name=$("stuNew").value.trim(), team=$("stuTeam").value;
+  if(!name)return toast("이름을 입력하세요 (first name만도 가능)");
+  if(roster.teams[team].some(n=>n.toLowerCase()===name.toLowerCase()))
+    return toast("이미 명단에 있습니다");
+  roster.teams[team].push(name);
+  roster.teams[team].sort((a,b)=>a.toLowerCase()<b.toLowerCase()?-1:1);
+  try{
+    await saveRoster();
+    $("stuNew").value="";
+    renderStudents();
+    $("stuName").value=name;renderStudents();
+    toast(team+" 명단에 "+name+" 추가 ✓ — 이제 [사진 선택]으로 사진을 올리세요");
+  }catch(e){toast("⚠ "+e.message);}
+});
+$("stuNew").addEventListener("keydown",e=>{if(e.key==="Enter")$("stuAddBtn").click();});
+$("stuRemoveBtn").addEventListener("click",async()=>{
+  const team=$("stuTeam").value, full=$("stuName").value;
+  if(!full)return;
+  const ex=findStu(team,full);
+  const msg=ex
+    ? full+" 을(를) 명단에서 제거할까요?\n등록된 사진도 함께 삭제됩니다."
+    : full+" 을(를) 명단에서 제거할까요?";
+  if(!confirm(msg))return;
+  try{
+    if(ex)await deleteDriveFile(ex.id,folderIds[CONFIG.studentsFolder]);
+    roster.teams[team]=roster.teams[team].filter(n=>n!==full);
+    await saveRoster();
+    await loadStudents();renderStudents();
+    toast("명단에서 제거 완료 ✓");
+  }catch(e){toast("⚠ "+e.message);}
+});
+
+/* ── 단체 사진 UI ── */
+function nextGroupNumber(){
+  const used=new Set(groupFiles.map(f=>{const m=/^group-(\d+)\./.exec(f.name);return m?+m[1]:0;}));
+  for(let n=1;n<=CONFIG.groupMax;n++)if(!used.has(n))return n;
+  return null;
+}
+function renderGroup(){
+  const grid=$("grpGrid");
+  grid.innerHTML=groupFiles.length?"":"<p class='empty-note'>등록된 단체 사진이 없습니다.</p>";
+  groupFiles.slice().sort((a,b)=>a.name<b.name?-1:1).forEach(f=>{
+    const div=document.createElement("div");div.className="pcard";
+    div.innerHTML="<div class='pimg'><img alt='"+f.name+"'></div>"+
+      "<div class='pname'>"+f.name+"</div>"+
+      "<div class='pbtns'><button class='del'>삭제</button></div>";
+    setDriveImg(div.querySelector("img"),f.id,300,f.thumbnailLink);
+    div.querySelector(".pimg").addEventListener("click",()=>{
+      $("lbImg").src="https://drive.google.com/thumbnail?id="+f.id+"&sz=w1600";
+      $("lb").classList.add("show");
+    });
+    div.querySelector(".del").addEventListener("click",async()=>{
+      if(!confirm(f.name+" 삭제할까요?"))return;
+      try{
+        await deleteDriveFile(f.id,folderIds[CONFIG.groupFolder]);
+        await loadGroup();renderGroup();toast("삭제 완료 ✓");
+      }catch(e){toast("⚠ "+e.message);}
+    });
+    grid.appendChild(div);
+  });
+}
+
+/* ── 크롭 UI: 이동 + 8방향 손잡이 (학생/단체 공용) ── */
+let cb={x:40,y:40,w:200,h:200}, cropDrag=null, stuSrcFile=null;
 const stage=$("cropStage"), cropImg=$("cropImg"), cropBox=$("cropBox");
 
 function paintBox(){
@@ -801,7 +914,7 @@ function clampBox(){
 cropBox.addEventListener("pointerdown",e=>{
   e.preventDefault();
   const h=e.target.classList.contains("ch")?e.target.classList[1]:"move";
-  cropDrag={mode:h,sx:e.clientX,sy:e.clientY,o:{...cb}};
+  cropDrag={mode:h,sx:e.clientX,sy:e.clientY,o:{x:cb.x,y:cb.y,w:cb.w,h:cb.h}};
   cropBox.setPointerCapture(e.pointerId);
 });
 cropBox.addEventListener("pointermove",e=>{
@@ -820,60 +933,79 @@ const endDrag=()=>{cropDrag=null;};
 cropBox.addEventListener("pointerup",endDrag);
 cropBox.addEventListener("pointercancel",endDrag);
 
-let stuSrcFile=null;
+function openCropper(file){
+  cropImg.src=URL.createObjectURL(file);
+  cropImg.onload=()=>{
+    $("cropTitle").style.display="block";
+    $("cropArea").style.display="grid";
+    const W=cropImg.clientWidth,H=cropImg.clientHeight;
+    const sz=Math.min(W,H)*(cropMode==="group"?0.9:0.6);
+    cb=cropMode==="group"
+      ? {x:(W-W*0.94)/2,y:(H-H*0.9)/2,w:W*0.94,h:H*0.9}
+      : {x:(W-sz)/2,y:(H-sz)/2,w:sz,h:sz};
+    clampBox();paintBox();
+    $("cropUpload").textContent=cropMode==="group"?"잘라서 업로드 (단체 사진 추가)":"잘라서 업로드 (등록/교체)";
+    $("cropArea").scrollIntoView({behavior:"smooth",block:"center"});
+    stuSrcFile={img:cropImg,file};
+  };
+  cropImg.onerror=()=>toast("⚠ 이 기기에서 읽을 수 없는 이미지입니다 — HEIC이면 JPG로 변환해 주세요");
+}
+function closeCropper(){
+  $("cropArea").style.display="none";$("cropTitle").style.display="none";stuSrcFile=null;
+}
+
 $("stuPickBtn").addEventListener("click",()=>{
-  if(!$("stuName").value)return toast("먼저 팀과 학생을 선택하세요");
-  $("stuInput").click();
+  if(!$("stuName").value)return toast("먼저 팀과 학생을 선택(또는 명단에 추가)하세요");
+  cropMode="student";$("stuInput").click();
 });
-$("stuInput").addEventListener("change",async e=>{
+$("grpPickBtn").addEventListener("click",()=>{cropMode="group";$("stuInput").click();});
+$("stuInput").addEventListener("change",e=>{
   const f=e.target.files[0];e.target.value="";
-  if(!f)return;
-  try{
-    const img=await loadImage(f);      /* HEIC 미지원 PC면 여기서 안내 */
-    stuSrcFile=img;
-    cropImg.src=img.src||"";           /* loadImage revokes url — 다시 그린다 */
-    /* loadImage가 URL을 해제하므로 새 objectURL로 표시 */
-    cropImg.src=URL.createObjectURL(f);
-    await new Promise(r=>{cropImg.onload=r;});
-    $("cropArea").style.display="block";
-    const W=cropImg.clientWidth,H=cropImg.clientHeight,sz=Math.min(W,H)*0.6;
-    cb={x:(W-sz)/2,y:(H-sz)/2,w:sz,h:sz};
-    paintBox();
-    stuSrcFile={img:cropImg,file:f};
-  }catch(err){toast("⚠ "+err.message);}
+  if(f)openCropper(f);
 });
-$("cropCancel").addEventListener("click",()=>{
-  $("cropArea").style.display="none";stuSrcFile=null;
-});
+$("cropCancel").addEventListener("click",closeCropper);
+
 $("cropUpload").addEventListener("click",async()=>{
   if(!stuSrcFile)return;
-  const team=$("stuTeam").value, full=$("stuName").value;
-  if(!full)return toast("학생을 선택하세요");
   const btn=$("cropUpload");btn.disabled=true;
   try{
     $("stuStatus").textContent="자르는 중 …";
     const im=stuSrcFile.img;
     const scale=im.naturalWidth/im.clientWidth;
     const sx=cb.x*scale, sy=cb.y*scale, sw=cb.w*scale, sh=cb.h*scale;
-    const outW=Math.min(800,Math.round(sw)), outH=Math.round(outW*sh/sw);
+    const maxW=cropMode==="group"?1600:800;
+    const outW=Math.min(maxW,Math.round(sw)), outH=Math.round(outW*sh/sw);
     const c=document.createElement("canvas");c.width=outW;c.height=outH;
     c.getContext("2d").drawImage(im,sx,sy,sw,sh,0,0,outW,outH);
     let blob=await new Promise(r=>c.toBlob(r,"image/webp",0.85));
     if(!blob||blob.type!=="image/webp")
       blob=await new Promise(r=>c.toBlob(r,"image/jpeg",0.85));
-    const fname=stuFileName(team,full);
-    $("stuStatus").textContent=fname+" 업로드 중 …";
-    const ex=findStu(team,full);
-    if(ex){ /* 같은 파일 ID에 내용만 교체 → 뷰어 파일명 유지 */
-      const r=await fetch("https://www.googleapis.com/upload/drive/v3/files/"+ex.id+"?uploadType=media",
-        {method:"PATCH",headers:Object.assign({"Content-Type":blob.type},authHeaders()),body:blob});
-      if(!r.ok)throw new Error("교체 실패 ("+r.status+")");
+
+    if(cropMode==="group"){
+      const n=nextGroupNumber();
+      if(n==null)throw new Error("단체 사진은 최대 "+CONFIG.groupMax+"장입니다 — 기존 사진을 삭제 후 올려주세요");
+      const fname="group-"+n+".webp";
+      $("stuStatus").textContent=fname+" 업로드 중 …";
+      await uploadBlob(fname,blob.type,blob,folderIds[CONFIG.groupFolder]);
+      await loadGroup();renderGroup();
+      toast("단체 사진 추가 완료 ✓");
     }else{
-      await uploadBlob(fname,blob.type,blob,folderIds[CONFIG.studentsFolder]);
+      const team=$("stuTeam").value, full=$("stuName").value;
+      if(!full)throw new Error("학생을 선택하세요");
+      const fname=stuFileName(team,full);
+      $("stuStatus").textContent=fname+" 업로드 중 …";
+      const ex=findStu(team,full);
+      if(ex){ /* 같은 파일 ID에 내용만 교체 */
+        const r=await fetch("https://www.googleapis.com/upload/drive/v3/files/"+ex.id+"?uploadType=media",
+          {method:"PATCH",headers:Object.assign({"Content-Type":blob.type},authHeaders()),body:blob});
+        if(!r.ok)throw new Error("교체 실패 ("+r.status+")");
+      }else{
+        await uploadBlob(fname,blob.type,blob,folderIds[CONFIG.studentsFolder]);
+      }
+      await loadStudents();renderStudents();
+      toast(full+" 사진 "+(ex?"교체":"등록")+" 완료 ✓");
     }
-    $("cropArea").style.display="none";stuSrcFile=null;$("stuStatus").textContent="";
-    await loadStudents();renderStudents();
-    toast(full+" 사진 "+(ex?"교체":"등록")+" 완료 ✓");
+    closeCropper();$("stuStatus").textContent="";
   }catch(e){$("stuStatus").textContent="";toast("⚠ "+e.message);}
   btn.disabled=false;
 });
