@@ -12,3 +12,4 @@ name-list-converted.txt
 
 sync-2026.ps1
 generate-files.ps1
+publish.ps1
