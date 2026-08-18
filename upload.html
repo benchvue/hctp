@@ -204,7 +204,7 @@
 <!-- 학생/단체 사진 관리 — super admin에게만 표시 -->
 <div class="panel" id="studentAdmin" style="padding-top:0">
 
-  <h2 class="sec">단체 사진 관리 <small>· super admin 전용 · 뷰어 맨 위(About 위)에 표시</small></h2>
+  <h2 class="sec">단체 사진 관리 <small>· 관리자 전용 · 뷰어 맨 위(About 위)에 표시</small></h2>
   <div class="upwrap card">
     <div class="crop-btns">
       <button class="mini" id="grpPickBtn" style="padding:10px 16px">단체 사진 선택 (JPG)</button>
@@ -213,6 +213,7 @@
     <div class="pgrid" id="grpGrid"></div>
   </div>
 
+  <div id="stuSection">
   <h2 class="sec">학생 사진 관리 <small>· super admin 전용 · 뷰어 Camp Teams 섹션에 표시</small></h2>
   <div class="upwrap card">
     <div class="stu-row">
@@ -233,6 +234,7 @@
     <h2 class="sec" style="font-size:16px;margin:6px 0 0">등록된 학생 사진</h2>
     <div class="pgrid" id="stuGrid"></div>
   </div>
+  </div><!-- /stuSection -->
 
   <h2 class="sec" id="cropTitle" style="display:none">사진 자르기</h2>
   <div class="upwrap card" id="cropArea" style="display:none">
@@ -273,6 +275,9 @@ const CONFIG = {
   webpMaxDim: 1600,
 
   superAdmin: "benchvue101@gmail.com",
+
+  /* 단체 사진을 관리(추가/삭제)할 수 있는 계정 — super admin은 자동 포함 */
+  groupAdmins: ["mihekang@gmail.com"],
 
   /* 학생/단체 사진 (super admin 전용)
      - 학생 사진: Drive "students" 폴더, 파일명 팀-이름.webp
@@ -492,16 +497,24 @@ async function loadAll(){
 
     renderAll();
 
-    /* 학생/단체 사진 관리 — super admin 전용 */
-    if(isSuper){
-      for(const n of [CONFIG.studentsFolder,CONFIG.groupFolder]){
+    /* 사진 관리 패널 — 단체 사진: super + groupAdmins / 학생 사진: super 전용 */
+    const isGroupAdmin = isSuper ||
+      CONFIG.groupAdmins.some(e=>e.toLowerCase()===myEmail);
+    if(isGroupAdmin){
+      const need = isSuper
+        ? [CONFIG.studentsFolder, CONFIG.groupFolder]
+        : [CONFIG.groupFolder];
+      for(const n of need){
         if(!folderIds[n]){const nf=await createFolder(n,CONFIG.rootFolder);folderIds[n]=nf.id;}
       }
       document.getElementById("studentAdmin").style.display="block";
-      await loadRoster();
-      await loadStudents();
+      document.getElementById("stuSection").style.display = isSuper ? "" : "none";
+      if(isSuper){
+        await loadRoster();
+        await loadStudents();
+        renderStudents();
+      }
       await loadGroup();
-      renderStudents();
       renderGroup();
     }
 
