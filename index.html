@@ -289,6 +289,30 @@
   .stu-name{display:block;margin-top:7px;font-size:12px;color:var(--ink);letter-spacing:.03em}
   .lightbox.solo .lb-caption{display:block}
 
+  /* ── 다운로드 버튼 + 액션 시트 ────────── */
+  .dl-btn{
+    position:absolute;right:12px;bottom:12px;z-index:4;
+    width:38px;height:38px;border-radius:50%;
+    display:grid;place-items:center;
+    background:rgba(19,16,17,.5);border:1px solid rgba(223,193,128,.55);
+    color:#dfc180;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .dl-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;
+    stroke-linecap:round;stroke-linejoin:round}
+  .group-item{position:relative}
+  .msheet{position:fixed;inset:0;background:rgba(30,25,18,.45);
+    display:none;align-items:flex-end;justify-content:center;z-index:120}
+  .msheet.open{display:flex}
+  .msheet-card{background:#fff;color:var(--ink);border-radius:18px 18px 0 0;
+    width:100%;max-width:480px;padding:8px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+    box-shadow:0 -10px 40px rgba(0,0,0,.35)}
+  .ms-title{font-size:11.5px;color:var(--muted);text-align:center;
+    padding:8px 0 10px;word-break:break-all}
+  .msheet-card a,.msheet-card button{display:block;width:100%;text-align:center;
+    font-family:inherit;font-size:15px;padding:13px;border:none;background:none;
+    color:var(--ink);border-top:1px solid rgba(169,129,47,.2);cursor:pointer;
+    text-decoration:none;-webkit-tap-highlight-color:transparent}
+  .msheet-card .ms-cancel{color:var(--muted)}
+
   /* ── 비디오 카드 ─────────────────────── */
   .video-gallery{
     display: grid;
@@ -566,6 +590,18 @@
   </svg>
 </button>
 
+<!-- 다운로드 액션 시트 -->
+<div class="msheet" id="msheet">
+  <div class="msheet-card">
+    <div class="ms-title" id="msTitle"></div>
+    <button id="msView">View original</button>
+    <a id="msDl" href="#">Download</a>
+    <button id="msCopy">Copy link</button>
+    <button id="msShare">Share…</button>
+    <button class="ms-cancel" id="msCancel">Cancel</button>
+  </div>
+</div>
+
 <!-- 라이트박스 -->
 <div class="lightbox" id="lightbox">
   <button class="close-btn" id="closeBtn" aria-label="Close">✕</button>
@@ -581,14 +617,18 @@
 </div>
 
 <script>
-  /* files.js(사진 목록)는 매일 갱신되므로 캐시를 우회해 항상 최신을 로드 */
+  /* files.js(사진 목록)와 origmap.js(원본 다운로드 매핑)는 매일 갱신되므로
+     캐시를 우회해 항상 최신을 로드 */
   document.write('<script src="files.js?ts=' + Date.now() + '"><\/script>');
+  document.write('<script src="origmap.js?ts=' + Date.now() + '"><\/script>');
 </script>
 <script>
   /* ══════════════ 데이터 ══════════════
      files.js 는 generate-files.ps1 실행으로 자동 생성됩니다.
      window.HCTP_FILES = { "2025": { day1:[...], ..., videos:[...] }, "2026": {...} } */
   const FILES = window.HCTP_FILES || {};
+  const ORIG  = window.HCTP_ORIG  || {};   /* {"2026":{"day1/jongbin-1.webp":{id,n},...}} */
+  const DL_FROM_YEAR = 2026;               /* 2025는 원본이 없어 다운로드 버튼 없음 */
   const DAY_KEYS = ["day1","day2","day3","day4","day5"];
   const DAY_LABELS = { day1:"Day 1", day2:"Day 2", day3:"Day 3", day4:"Day 4", day5:"Day 5" };
   const IMG_EXT = /\.(webp|jpe?g|png)$/i;
@@ -606,6 +646,78 @@
       const t = a[i]; a[i] = a[j]; a[j] = t;
     }
     return a;
+  }
+
+  /* ══════════════ 다운로드 메뉴 (2026+ 원본 다운로드) ══════════════ */
+  const DL_ICON = '<span class="dl-btn" role="button" aria-label="Download options">'
+    + '<svg viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/>'
+    + '<path d="M5 20h14"/></svg></span>';
+
+  const msheet = document.getElementById("msheet");
+  const msEls = {
+    title: document.getElementById("msTitle"),
+    view:  document.getElementById("msView"),
+    dl:    document.getElementById("msDl"),
+    copy:  document.getElementById("msCopy"),
+    share: document.getElementById("msShare"),
+    cancel:document.getElementById("msCancel")
+  };
+  let msOpts = null;
+
+  function openMediaMenu(o){
+    msOpts = o;
+    msEls.title.textContent = o.dlName || "";
+    msEls.view.style.display = o.viewUrl ? "block" : "none";
+    msEls.dl.href = o.dlUrl;
+    if (o.sameOrigin) { msEls.dl.setAttribute("download", o.dlName || ""); msEls.dl.removeAttribute("target"); }
+    else { msEls.dl.removeAttribute("download"); msEls.dl.setAttribute("target", "_blank"); }
+    msEls.share.style.display = navigator.share ? "block" : "none";
+    msEls.copy.textContent = "Copy link";
+    msheet.classList.add("open");
+  }
+  const closeMenu = () => msheet.classList.remove("open");
+  msEls.cancel.addEventListener("click", closeMenu);
+  msheet.addEventListener("click", e => { if (e.target === msheet) closeMenu(); });
+  msEls.view.addEventListener("click", () => { if (msOpts) window.open(msOpts.viewUrl, "_blank"); closeMenu(); });
+  msEls.dl.addEventListener("click", () => setTimeout(closeMenu, 300));
+  msEls.copy.addEventListener("click", () => {
+    if (!msOpts) return;
+    const done = () => { msEls.copy.textContent = "Copied ✓"; setTimeout(closeMenu, 700); };
+    if (navigator.clipboard && navigator.clipboard.writeText)
+      navigator.clipboard.writeText(msOpts.copyUrl).then(done, done);
+    else {
+      const t = document.createElement("textarea");
+      t.value = msOpts.copyUrl; document.body.appendChild(t);
+      t.select(); try { document.execCommand("copy"); } catch(e){}
+      t.remove(); done();
+    }
+  });
+  msEls.share.addEventListener("click", () => {
+    if (msOpts && navigator.share)
+      navigator.share({ title: "HCTP Summer Camp", url: msOpts.copyUrl }).catch(function(){});
+    closeMenu();
+  });
+
+  const canDownload = year => parseInt(year, 10) >= DL_FROM_YEAR;
+  const origFor = (year, folder, file) => (ORIG[year] || {})[folder + "/" + file] || null;
+
+  /* 사진: 원본이 Drive에 있으면 원본, 없으면 webp 자체를 다운로드 */
+  function menuForPhoto(year, folder, file){
+    const rel = year + "/" + folder + "/" + encodeURIComponent(file);
+    const abs = new URL(rel, location.href).href;
+    const o = origFor(year, folder, file);
+    openMediaMenu(o ? {
+      viewUrl: "https://drive.google.com/file/d/" + o.id + "/view",
+      dlUrl:   "https://drive.google.com/uc?export=download&id=" + o.id,
+      dlName:  o.n, copyUrl: abs, sameOrigin: false
+    } : {
+      viewUrl: abs, dlUrl: rel, dlName: file, copyUrl: abs, sameOrigin: true
+    });
+  }
+  function menuForVideo(year, file){
+    const rel = year + "/videos/" + encodeURIComponent(file);
+    const abs = new URL(rel, location.href).href;
+    openMediaMenu({ viewUrl: null, dlUrl: rel, dlName: file, copyUrl: abs, sameOrigin: true });
   }
 
   /* ══════════════ 배경음악 (BGM) ══════════════
@@ -812,10 +924,11 @@
     imgA.alt = imgB.alt = label + " camp photo";
     imgA.decoding = imgB.decoding = "async";
     frame.append(imgA, imgB);
+    const showDl = canDownload(year);
     frame.insertAdjacentHTML("beforeend",
       '<span class="day-tag">' + label + '</span>' +
       '<span class="slide-counter"></span>' +
-      '<span class="slide-hint">Tap to enlarge</span>' +
+      (showDl ? DL_ICON : '<span class="slide-hint">Tap to enlarge</span>') +
       '<button class="s-arrow s-prev" aria-label="Previous photo"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>' +
       '<button class="s-arrow s-next" aria-label="Next photo"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>');
     const counter = frame.querySelector(".slide-counter");
@@ -849,6 +962,7 @@
     frame.addEventListener("click", e => {
       if (e.target.closest(".s-prev")) { show(idx - 1); return; }
       if (e.target.closest(".s-next")) { show(idx + 1); return; }
+      if (e.target.closest(".dl-btn")) { menuForPhoto(year, key, files[idx]); return; }
       lb.openImage(ctrl);
     });
     frame.addEventListener("keydown", e => {
@@ -952,12 +1066,22 @@
     head.style.display=""; root.style.display=""; root.innerHTML="";
     files.forEach(f => {
       const src = year + "/group/" + encodeURIComponent(f);
+      const item = document.createElement("div");
+      item.className = "group-item";
       const b = document.createElement("button");
       b.className = "group-card";
+      b.style.width = "100%";
       b.innerHTML = "<img loading='lazy' decoding='async' alt='HCTP " + year + " group photo'>";
       b.querySelector("img").src = src;
       b.addEventListener("click", () => lb.openSolo(src, "HCTP " + year + " Summer Camp"));
-      root.appendChild(b);
+      item.appendChild(b);
+      if (canDownload(year)){
+        item.insertAdjacentHTML("beforeend", DL_ICON);
+        item.querySelector(".dl-btn").addEventListener("click", e => {
+          e.stopPropagation(); menuForPhoto(year, "group", f);
+        });
+      }
+      root.appendChild(item);
     });
   }
 
