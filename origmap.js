@@ -78,5 +78,9 @@
     "day4/jongbin-1.webp":  {
                                 "id":  "1Z2lDLz0gbi5ZvA14UDjVw5EG4JbU9YGb",
                                 "n":  "jongbin-1.jpg"
-                            }
+                            },
+    "group/group-1.webp":  {
+                               "id":  "1wMzFICiTpvmzAt45rzkIAkBD6kYKLJV9",
+                               "n":  "group-1.jpg"
+                           }
 } };
