@@ -177,7 +177,7 @@
     <button class="upl-btn" id="photoBtn">＋ Choose photos to upload</button>
     <input type="file" id="photoInput" accept="image/*" multiple hidden>
     <div class="status" id="photoStatus"></div>
-    <div class="hintline">Files are renamed automatically per day: <b>yourname-1.webp, yourname-2.webp …</b></div>
+    <div class="hintline">Two files are saved per photo: <b>yourname-1.webp</b> (site) + <b>yourname-1.jpg</b> (original, for downloads). Deleting removes both.</div>
   </div>
 
   <!-- upload videos -->
@@ -480,6 +480,9 @@ async function loadAll(){
     const dbIds=new Set(db.uploads.map(u=>u.fileId));
     for(const {folder,file} of driveFiles){
       if(dbIds.has(file.id))continue;
+      /* 원본(jpg/png/heic 등)은 db·쿼터 대상이 아님 — webp/mp4만 집계 */
+      if(folder===CONFIG.videoFolder){ if(!/\.mp4$/i.test(file.name))continue; }
+      else if(!/\.webp$/i.test(file.name))continue;
       const m=/^([a-z]+)-\d+\./i.exec(file.name);
       const t=(m&&teacherByFirst(m[1]))||teacherByEmail(file.owners&&file.owners[0]&&file.owners[0].emailAddress);
       db.uploads.push({
@@ -493,7 +496,11 @@ async function loadAll(){
     if(changed)await writeDb(db);
 
     window._driveMeta={};
-    driveFiles.forEach(x=>window._driveMeta[x.file.id]=x.file);
+    window._byFolder={};
+    driveFiles.forEach(x=>{
+      window._driveMeta[x.file.id]=x.file;
+      (window._byFolder[x.folder]=window._byFolder[x.folder]||[]).push(x.file);
+    });
 
     renderAll();
 
@@ -593,7 +600,18 @@ $("photoInput").addEventListener("change",async e=>{
       $("photoStatus").textContent="Uploading "+name+" to "+curDay+" …";
       const up=await uploadBlob(name,w.mime,w.blob,folderIds[curDay],
         p=>$("photoStatus").textContent="Uploading "+name+" … "+Math.round(p*100)+"%");
-      await updateDb(d=>d.uploads.push({fileId:up.id,name,type:"photo",folder:curDay,email:me.email,ts:Date.now()}));
+
+      /* 원본(고해상도)도 같은 이름으로 함께 업로드 — 뷰어의 다운로드용 */
+      let origId=null, origName=null;
+      const origExt=(f.name.split(".").pop()||"jpg").toLowerCase().replace("jpeg","jpg");
+      if(origExt!=="webp"){
+        origName=me.first+"-"+n+"."+origExt;
+        $("photoStatus").textContent="Uploading original "+origName+" …";
+        const upO=await uploadBlob(origName,f.type||"application/octet-stream",f,folderIds[curDay],
+          p=>$("photoStatus").textContent="Uploading original "+origName+" … "+Math.round(p*100)+"%");
+        origId=upO.id;
+      }
+      await updateDb(d=>d.uploads.push({fileId:up.id,name,type:"photo",folder:curDay,email:me.email,ts:Date.now(),origId,origName}));
       done++;
     }catch(err){toast("⚠ "+f.name+": "+err.message);}
   }
@@ -634,6 +652,15 @@ async function removeUpload(u){
   if(!confirm("Delete "+u.name+" ("+u.folder+") ?"))return;
   try{
     await deleteDriveFile(u.fileId,folderIds[u.folder]);
+    /* 함께 올라간 원본도 삭제 (db 기록 또는 같은 이름의 다른 확장자 검색) */
+    let oid=u.origId;
+    if(!oid){
+      const base=u.name.replace(/\.webp$/i,"");
+      const sib=((window._byFolder||{})[u.folder]||[]).find(x=>
+        x.id!==u.fileId&&x.name.replace(/\.[^.]+$/,"")===base);
+      if(sib)oid=sib.id;
+    }
+    if(oid){try{await deleteDriveFile(oid,folderIds[u.folder]);}catch(e){}}
     await updateDb(d=>{d.uploads=d.uploads.filter(x=>x.fileId!==u.fileId);});
     toast("Deleted "+u.name+" ✓  (a slot is free again)");
     renderAll();
@@ -941,14 +968,16 @@ $("stuRemoveBtn").addEventListener("click",async()=>{
 
 /* ── 단체 사진 UI ── */
 function nextGroupNumber(){
-  const used=new Set(groupFiles.map(f=>{const m=/^group-(\d+)\./.exec(f.name);return m?+m[1]:0;}));
+  const used=new Set(groupFiles.filter(f=>/\.webp$/i.test(f.name))
+    .map(f=>{const m=/^group-(\d+)\./.exec(f.name);return m?+m[1]:0;}));
   for(let n=1;n<=CONFIG.groupMax;n++)if(!used.has(n))return n;
   return null;
 }
 function renderGroup(){
   const grid=$("grpGrid");
-  grid.innerHTML=groupFiles.length?"":"<p class='empty-note'>등록된 단체 사진이 없습니다.</p>";
-  groupFiles.slice().sort((a,b)=>a.name<b.name?-1:1).forEach(f=>{
+  const webps=groupFiles.filter(f=>/\.webp$/i.test(f.name));
+  grid.innerHTML=webps.length?"":"<p class='empty-note'>등록된 단체 사진이 없습니다.</p>";
+  webps.slice().sort((a,b)=>a.name<b.name?-1:1).forEach(f=>{
     const div=document.createElement("div");div.className="pcard";
     div.innerHTML="<div class='pimg'><img alt='"+f.name+"'></div>"+
       "<div class='pname'>"+f.name+"</div>"+
@@ -959,9 +988,12 @@ function renderGroup(){
       $("lb").classList.add("show");
     });
     div.querySelector(".del").addEventListener("click",async()=>{
-      if(!confirm(f.name+" 삭제할까요?"))return;
+      if(!confirm(f.name+" 삭제할까요? (원본도 함께 삭제됩니다)"))return;
       try{
         await deleteDriveFile(f.id,folderIds[CONFIG.groupFolder]);
+        const base=f.name.replace(/\.webp$/i,"");
+        const sib=groupFiles.find(x=>x.id!==f.id&&x.name.replace(/\.[^.]+$/,"")===base);
+        if(sib){try{await deleteDriveFile(sib.id,folderIds[CONFIG.groupFolder]);}catch(e){}}
         await loadGroup();renderGroup();toast("삭제 완료 ✓");
       }catch(e){toast("⚠ "+e.message);}
     });
@@ -1058,8 +1090,16 @@ $("cropUpload").addEventListener("click",async()=>{
       const fname="group-"+n+".webp";
       $("stuStatus").textContent=fname+" 업로드 중 …";
       await uploadBlob(fname,blob.type,blob,folderIds[CONFIG.groupFolder]);
+      /* 원본(자르기 전 전체 사진)도 함께 업로드 — 뷰어 다운로드용 */
+      const oExt=(stuSrcFile.file.name.split(".").pop()||"jpg").toLowerCase().replace("jpeg","jpg");
+      if(oExt!=="webp"){
+        const oName="group-"+n+"."+oExt;
+        $("stuStatus").textContent="원본 "+oName+" 업로드 중 …";
+        await uploadBlob(oName,stuSrcFile.file.type||"application/octet-stream",
+          stuSrcFile.file,folderIds[CONFIG.groupFolder]);
+      }
       await loadGroup();renderGroup();
-      toast("단체 사진 추가 완료 ✓");
+      toast("단체 사진 추가 완료 ✓ (원본 포함)");
     }else{
       const team=$("stuTeam").value, full=$("stuName").value;
       if(!full)throw new Error("학생을 선택하세요");

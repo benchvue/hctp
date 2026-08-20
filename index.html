@@ -922,6 +922,7 @@
           '<img loading="lazy" decoding="async" alt="' + classLabel(f) + ' video preview">' +
           playIcon +
           '<span class="vlabel">' + classLabel(f) + '</span>' +
+          (canDownload(year) ? DL_ICON : '') +
         '</div>';
 
       /* 썸네일 이미지가 없으면(생성 실패 등) 안내 카드로 대체 */
@@ -934,7 +935,10 @@
       }, { once: true });
       im.src = thumbPath;
 
-      vcard.addEventListener("click", () => lb.openVideo(srcPath));
+      vcard.addEventListener("click", e => {
+        if (e.target.closest(".dl-btn")) { menuForVideo(year, f); return; }
+        lb.openVideo(srcPath);
+      });
       gal.appendChild(vcard);
     });
   }
