@@ -594,7 +594,6 @@
 <div class="msheet" id="msheet">
   <div class="msheet-card">
     <div class="ms-title" id="msTitle"></div>
-    <button id="msView">View original</button>
     <a id="msDl" href="#">Download</a>
     <button id="msCopy">Copy link</button>
     <button id="msShare">Share…</button>
@@ -656,7 +655,6 @@
   const msheet = document.getElementById("msheet");
   const msEls = {
     title: document.getElementById("msTitle"),
-    view:  document.getElementById("msView"),
     dl:    document.getElementById("msDl"),
     copy:  document.getElementById("msCopy"),
     share: document.getElementById("msShare"),
@@ -667,7 +665,6 @@
   function openMediaMenu(o){
     msOpts = o;
     msEls.title.textContent = o.dlName || "";
-    msEls.view.style.display = o.viewUrl ? "block" : "none";
     msEls.dl.href = o.dlUrl;
     if (o.sameOrigin) { msEls.dl.setAttribute("download", o.dlName || ""); msEls.dl.removeAttribute("target"); }
     else { msEls.dl.removeAttribute("download"); msEls.dl.setAttribute("target", "_blank"); }
@@ -678,7 +675,6 @@
   const closeMenu = () => msheet.classList.remove("open");
   msEls.cancel.addEventListener("click", closeMenu);
   msheet.addEventListener("click", e => { if (e.target === msheet) closeMenu(); });
-  msEls.view.addEventListener("click", () => { if (msOpts) window.open(msOpts.viewUrl, "_blank"); closeMenu(); });
   msEls.dl.addEventListener("click", () => setTimeout(closeMenu, 300));
   msEls.copy.addEventListener("click", () => {
     if (!msOpts) return;
@@ -707,17 +703,16 @@
     const abs = new URL(rel, location.href).href;
     const o = origFor(year, folder, file);
     openMediaMenu(o ? {
-      viewUrl: "https://drive.google.com/file/d/" + o.id + "/view",
-      dlUrl:   "https://drive.google.com/uc?export=download&id=" + o.id,
-      dlName:  o.n, copyUrl: abs, sameOrigin: false
+      dlUrl:  "https://drive.google.com/uc?export=download&id=" + o.id,
+      dlName: o.n, copyUrl: abs, sameOrigin: false
     } : {
-      viewUrl: abs, dlUrl: rel, dlName: file, copyUrl: abs, sameOrigin: true
+      dlUrl: rel, dlName: file, copyUrl: abs, sameOrigin: true
     });
   }
   function menuForVideo(year, file){
     const rel = year + "/videos/" + encodeURIComponent(file);
     const abs = new URL(rel, location.href).href;
-    openMediaMenu({ viewUrl: null, dlUrl: rel, dlName: file, copyUrl: abs, sameOrigin: true });
+    openMediaMenu({ dlUrl: rel, dlName: file, copyUrl: abs, sameOrigin: true });
   }
 
   /* ══════════════ 배경음악 (BGM) ══════════════
