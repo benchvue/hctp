@@ -730,7 +730,7 @@
                                   "strawberry-joseph-sargenti.webp"
                               ],
                  "group":  [
-
+                               "group-1.webp"
                            ]
              }
 };
