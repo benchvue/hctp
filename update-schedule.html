@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>HCTP 시간표 편집 (관리자)</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital@0;1&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root{--paper:#f7f4ec;--card:#fff;--ink:#2a251d;--gold:#a9812f;--muted:#867d6d;
+    --line:#e3dcc9;--err:#b4404f;--ok:#1e7a46}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'Noto Sans KR',sans-serif;
+    font-weight:300;font-size:13.5px;min-height:100vh}
+  button,input,select{font-family:inherit;font-size:13px}
+  .card{border:1px solid var(--line);border-radius:14px;background:#fff;
+    box-shadow:0 6px 22px -14px rgba(90,70,30,.25)}
+  .lock{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .lock-card{text-align:center;padding:44px 32px;max-width:430px;width:100%}
+  .lock-title{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:24px;color:var(--gold);margin-top:8px}
+  .lock-sub{margin-top:10px;font-size:13px;color:var(--muted);line-height:1.8}
+  .gsign{margin-top:22px;border:1px solid var(--gold);border-radius:999px;background:var(--gold);
+    color:#fff;padding:12px 26px;font-size:14px;font-weight:500;cursor:pointer}
+  .gsign:hover{background:#fff;color:var(--gold)}
+  .denied{color:var(--err);margin-top:14px;font-size:13px;display:none;font-weight:500}
+
+  .panel{display:none;max-width:1180px;margin:0 auto;padding:18px 16px 110px}
+  .topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;
+    flex-wrap:wrap;padding:12px 16px;margin-bottom:14px}
+  .topbar h1{font-family:'Cormorant Garamond',serif;font-weight:400;font-size:21px}
+  .topbar h1 em{font-style:italic;color:var(--gold)}
+  .who{font-size:11.5px;color:var(--muted)}
+  .mini{border:1px solid var(--gold);border-radius:999px;background:#fff;color:var(--gold);
+    font-size:12px;padding:7px 14px;cursor:pointer;text-decoration:none;display:inline-block}
+  .mini:hover{background:var(--gold);color:#fff}
+
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+  .tabs button{border:1px solid var(--gold);border-radius:999px;background:#fff;color:var(--gold);
+    padding:8px 18px;cursor:pointer}
+  .tabs button.on{background:var(--gold);color:#fff;font-weight:500}
+
+  .dayhead{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:12px 14px;margin-bottom:10px}
+  .dayhead label{font-size:11px;color:var(--muted);display:block;margin-bottom:3px}
+  .dayhead input{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff}
+
+  .rows{display:grid;gap:8px}
+  .erow{display:grid;gap:6px;align-items:center;padding:9px 10px;
+    grid-template-columns:26px 26px 130px 150px 96px 1fr 1fr 118px 30px}
+  .erow input,.erow select{border:1px solid var(--line);border-radius:8px;
+    padding:7px 9px;background:#fff;width:100%}
+  .erow .cell{transition:background .2s}
+  .mv{width:26px;height:30px;border:1px solid var(--line);border-radius:7px;background:#fff;
+    cursor:pointer;color:var(--muted)}
+  .mv:hover{border-color:var(--gold);color:var(--gold)}
+  .del{border:1px solid #e0bcc2;border-radius:7px;background:#fbf3f4;color:var(--err);
+    width:30px;height:30px;cursor:pointer}
+  .del:hover{background:var(--err);color:#fff;border-color:var(--err)}
+  .spanwrap{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);white-space:nowrap}
+  .addrow{margin-top:10px}
+
+  .savebar{position:fixed;left:0;right:0;bottom:0;background:rgba(247,244,236,.96);
+    border-top:1px solid var(--line);backdrop-filter:blur(6px);padding:12px 16px;
+    display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;z-index:50}
+  .btn-gold{border:1px solid var(--gold);border-radius:999px;background:var(--gold);color:#fff;
+    font-size:14px;font-weight:500;padding:11px 30px;cursor:pointer}
+  .btn-gold:disabled{opacity:.5}
+  .btn-plain{border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--muted);
+    font-size:13px;padding:10px 20px;cursor:pointer}
+  .dirty{font-size:12px;color:var(--err);font-weight:500;display:none}
+  .toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%);background:var(--ink);
+    color:#fff;font-size:13px;padding:10px 20px;border-radius:999px;opacity:0;
+    pointer-events:none;transition:opacity .25s;z-index:99;max-width:92vw;text-align:center}
+  .toast.show{opacity:1}
+  .note{font-size:11.5px;color:var(--muted);margin:8px 2px 0;line-height:1.7}
+  @media (max-width:900px){
+    .erow{grid-template-columns:26px 26px 1fr 1fr 30px;grid-auto-flow:dense}
+    .erow .wide{grid-column:1/-1}
+  }
+</style>
+</head>
+<body>
+
+<div class="lock" id="lockScreen">
+  <div class="lock-card card">
+    <div style="font-size:30px">🗓️🔒</div>
+    <div class="lock-title">시간표 편집 · 2026</div>
+    <div class="lock-sub">지정된 관리자만 수정할 수 있습니다.<br>
+      동의 화면에서 <b>Google Drive</b> 체크박스를 꼭 선택하세요.</div>
+    <button class="gsign" id="signInBtn">G · Google로 로그인</button>
+    <div class="denied" id="deniedMsg">이 계정은 시간표 관리자가 아닙니다.</div>
+  </div>
+</div>
+
+<div class="panel" id="panel">
+  <div class="topbar card">
+    <div>
+      <h1>HCTP <em>시간표 편집</em></h1>
+      <div class="who" id="whoAmI"></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a class="mini" href="schedule.html" target="_blank">시간표 보기</a>
+      <button class="mini" id="reloadBtn">↻ 다시 불러오기</button>
+      <button class="mini" id="signOutBtn">로그아웃</button>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="dayhead card">
+    <div><label>요일 제목</label><input id="dayTitle" style="width:180px"></div>
+    <div><label>Team A 이름</label><input id="teamA" style="width:130px"></div>
+    <div><label>Team B 이름</label><input id="teamB" style="width:130px"></div>
+  </div>
+
+  <div class="rows" id="rows"></div>
+  <button class="mini addrow" id="addRowBtn">＋ 줄 추가</button>
+  <p class="note">↑↓ 순서 이동 · 종류를 바꾸면 배경색이 바뀝니다 · "요일 이동"을 고르면 그 요일 맨 아래로 옮겨집니다 ·
+    수업 이름(Cooking, Art, Stem…)을 입력하면 셀 색이 자동으로 칠해집니다 ·
+    <b>저장을 눌러야</b> schedule.html(학부모·선생님용)에 반영됩니다. 이 편집기는 데스크톱 사용을 권장합니다.</p>
+</div>
+
+<div class="savebar" id="savebar" style="display:none">
+  <span class="dirty" id="dirtyNote">● 저장되지 않은 변경사항</span>
+  <button class="btn-gold" id="saveBtn">저장 (사이트에 반영)</button>
+  <button class="btn-plain" id="resetBtn">기본 시간표로 되돌리기</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════ CONFIG ══════════ */
+const CONFIG = {
+  clientId: "1075824030904-483gk6d1pa361u0ink9v55o0m572rnej.apps.googleusercontent.com",
+  rootFolder: "1Roissh94L1dbhzTSnYEN5IbchacskgbH",
+  dbFolder: "db",
+  scheduleFile: "hctp-2026-schedule.json",
+  admins: ["mihekang@gmail.com","benchvue101@gmail.com"]
+};
+
+/* ══════════ 색상 규칙 (update-schedule.html과 동일) ══════════ */
+const KIND_BG = { bod:"#dde4f0", arrival:"#cfe4cf", mfp:"#ecd7f0",
+                  lunch:"#fbf59e", dismissal:"#f3c9bc", plain:"#e7ebf3", period:"#ffffff" };
+const CLASS_BG = { cooking:"#ffe2bf", art:"#ffd6e0", ai:"#cfe4ff", stem:"#d9f0c8",
+                   tkd:"#e3d9fb", sports:"#c9ecec", teamup:"#f6e2b8" };
+const CLASS_LABEL = { cooking:"Cooking", art:"Art", ai:"Scratch with AI", stem:"STEM",
+                      tkd:"Taekwondo", sports:"Sports", teamup:"Team Up & Solve It" };
+function classOf(t){
+  t=(t||"").toLowerCase();
+  if(t.includes("cook"))return"cooking";
+  if(t.includes("scratch")||t.includes("ai with"))return"ai";
+  if(t.includes("stem"))return"stem";
+  if(t.includes("taekwon"))return"tkd";
+  if(t.includes("sport"))return"sports";
+  if(t.includes("team up"))return"teamup";
+  if(t.includes("art"))return"art";
+  return null;
+}
+
+/* ══════════ 기본 시간표 (Drive를 못 읽을 때의 fallback) ══════════ */
+const DEFAULT_SCHEDULE = {"days":[
+ {"key":"mon","title":"Monday, 8/24","teamA":"Coconut","teamB":"Strawberry","rows":[
+  {"label":"Bod Job","time":"(08:30)","kind":"bod","span":true,"text":"Open the bldg & turn AC on for 2 lobbies/cafeteria (Mihee)"},
+  {"label":"Arrival","time":"(08:40~9:00)","kind":"arrival","span":true,"text":"(Sign in : Mihee/Sungjae, Photos: Jongbin)"},
+  {"label":"Orientation","time":"(09:00~09:30)","kind":"mfp","span":true,"text":"(Orientation: Henry)"},
+  {"label":"Period 1","time":"(09:30~10:15)","kind":"period","span":false,"a":"Cooking (Hae-young)","b":"Stem"},
+  {"label":"Period 2","time":"(10:25~11:10)","kind":"period","span":false,"a":"Art","b":"AI with Scratch"},
+  {"label":"Period 3","time":"(11:20~12:05)","kind":"period","span":false,"a":"AI with Scratch","b":"Cooking (Hae-young)"},
+  {"label":"LUNCH","time":"(12:05~01:10)","kind":"lunch","span":true,"text":"Lunch = 65min / (Gym Monitor: Henry)"},
+  {"label":"Period 5","time":"(01:10~1:55)","kind":"period","span":false,"a":"Stem","b":"Taekwondo"},
+  {"label":"Period 6","time":"(02:05~02:50)","kind":"period","span":false,"a":"Taekwondo","b":"Art"},
+  {"label":"Dismissal","time":"(02:50~03:00)","kind":"dismissal","span":true,"text":"Sign out : Sungjae / Hae-young"},
+  {"label":"Team Mtg","time":"(03:00~03:10)","kind":"plain","span":true,"text":"First Day Meeting (in the 1st fl Office)"},
+  {"label":"Eod Job","time":"(03:10~03:20)","kind":"plain","span":true,"text":"Make sure ACs/lights are off in all the open rooms/areas & lock the front (EoD: Mihee)"}]},
+ {"key":"tue","title":"Tuesday, 8/25","teamA":"Coconut","teamB":"Strawberry","rows":[
+  {"label":"Bod Job","time":"(08:30)","kind":"bod","span":true,"text":"Open the bldg & turn AC on for 2 lobbies/cafeteria (Mihee)"},
+  {"label":"Arrival","time":"(08:40~9:00)","kind":"arrival","span":true,"text":"(Sign in : Jongbin/Henry)"},
+  {"label":"Morning Free Play","time":"(09:00~09:30)","kind":"mfp","span":true,"text":"(MFP Monitor : Mihee)"},
+  {"label":"Period 1","time":"(09:30~10:15)","kind":"period","span":false,"a":"Scratch with AI","b":"Cooking (Soo Woo)"},
+  {"label":"Period 2","time":"(10:25~11:10)","kind":"period","span":false,"a":"Art","b":"Scratch with AI"},
+  {"label":"Period 3","time":"(11:20~12:05)","kind":"period","span":false,"a":"Cooking (Soo Woo)","b":"Stem"},
+  {"label":"LUNCH","time":"(12:05~01:10)","kind":"lunch","span":true,"text":"Lunch = 65min / (Gym Monitor: Mihee)"},
+  {"label":"Period 5","time":"(01:10~1:55)","kind":"period","span":false,"a":"Stem","b":"Sports"},
+  {"label":"Period 6","time":"(02:05~02:50)","kind":"period","span":false,"a":"Sports","b":"Art"},
+  {"label":"Dismissal","time":"(02:50~03:00)","kind":"dismissal","span":true,"text":"Sign out : Soo / Henry"},
+  {"label":"Eod Job","time":"(03:10~03:20)","kind":"plain","span":true,"text":"Make sure ACs/lights are off in all the open rooms/areas & lock the front (EoD: Sungjae)"}]},
+ {"key":"wed","title":"Wednesday, 8/26","teamA":"Coconut","teamB":"Strawberry","rows":[
+  {"label":"Bod Job","time":"(08:30)","kind":"bod","span":true,"text":"Open the bldg & turn AC on for 2 lobbies/cafeteria (Mihee)"},
+  {"label":"Arrival","time":"(08:40~9:00)","kind":"arrival","span":true,"text":"(Sign in : Hehjun/Jongbin)"},
+  {"label":"Morning Free Play","time":"(09:00~09:30)","kind":"mfp","span":true,"text":"(MFP Monitor : Henry)"},
+  {"label":"Period 1","time":"(09:30~10:15)","kind":"period","span":false,"a":"Cooking (Soo Woo)","b":"Scratch with AI"},
+  {"label":"Period 2","time":"(10:25~11:10)","kind":"period","span":false,"a":"Scratch with AI","b":"Team Up and Solve It"},
+  {"label":"Period 3","time":"(11:20~12:05)","kind":"period","span":false,"a":"Stem","b":"Cooking (Soo Woo)"},
+  {"label":"LUNCH","time":"(12:05~01:10)","kind":"lunch","span":true,"text":"Lunch = 65min / (Gym Monitor: Henry)"},
+  {"label":"Period 5","time":"(01:10~1:55)","kind":"period","span":false,"a":"Art","b":"Stem"},
+  {"label":"Period 6","time":"(02:05~02:50)","kind":"period","span":false,"a":"Team Up and Solve It","b":"Art"},
+  {"label":"Dismissal","time":"(02:50~03:00)","kind":"dismissal","span":true,"text":"Sign out : Soo / Mihee"},
+  {"label":"Eod Job","time":"(03:10~03:20)","kind":"plain","span":true,"text":"Make sure ACs/lights are off in all the open rooms/areas & lock the front (EoD: Henry)"}]},
+ {"key":"thu","title":"Thursday, 8/27","teamA":"Coconut","teamB":"Strawberry","rows":[
+  {"label":"Bod Job","time":"(08:30)","kind":"bod","span":true,"text":"Open the bldg & turn AC on for 2 lobbies/cafeteria (Mihee)"},
+  {"label":"Arrival","time":"(08:40~9:00)","kind":"arrival","span":true,"text":"(Sign in : Sungjae/Mihee)"},
+  {"label":"Morning Free Play","time":"(09:00~09:30)","kind":"mfp","span":true,"text":"(MFP Monitor : Jongbin)"},
+  {"label":"Period 1","time":"(09:30~10:15)","kind":"period","span":false,"a":"Cooking (Hae-young)","b":"Scratch with AI"},
+  {"label":"Period 2","time":"(10:25~11:10)","kind":"period","span":false,"a":"Art","b":"Stem"},
+  {"label":"Period 3","time":"(11:20~12:05)","kind":"period","span":false,"a":"Stem","b":"Cooking (Hae-young)"},
+  {"label":"LUNCH","time":"(12:05~01:10)","kind":"lunch","span":true,"text":"Lunch = 65min / (Gym Monitor: Coconut Team TAs)"},
+  {"label":"Period 5","time":"(01:10~1:55)","kind":"period","span":false,"a":"Scratch with AI","b":"Team Up and Solve It"},
+  {"label":"Period 6","time":"(02:05~02:50)","kind":"period","span":false,"a":"Team Up and Solve It","b":"Art"},
+  {"label":"Dismissal","time":"(02:50~03:00)","kind":"dismissal","span":true,"text":"Sign out : Hae-young / Sungjae"},
+  {"label":"Eod Job","time":"(03:10~03:20)","kind":"plain","span":true,"text":"Make sure ACs/lights are off in all the open rooms/areas & lock the front (EoD: Hae-young)"}]},
+ {"key":"fri","title":"Friday, 8/28","teamA":"Watermelon","teamB":"Pineapple","rows":[
+  {"label":"Bod Job","time":"(08:30)","kind":"bod","span":true,"text":"Open the bldg & turn AC on for 2 lobbies/cafeteria (Mihee)"},
+  {"label":"Arrival","time":"(08:50~9:00)","kind":"arrival","span":true,"text":"(Sign in : Hehjun/Jongbin)"},
+  {"label":"Morning Free Play","time":"(09:00~09:30)","kind":"mfp","span":true,"text":"(MFP Monitor : Sungjae) · Group Photo time"},
+  {"label":"Period 1","time":"(09:30~10:15)","kind":"period","span":false,"a":"Art","b":"Stem"},
+  {"label":"Period 2","time":"(10:25~11:05)","kind":"period","span":false,"a":"Scratch with AI","b":"Art"},
+  {"label":"Period 3","time":"(11:15~12:05)","kind":"period","span":false,"a":"Stem","b":"Scratch with AI"},
+  {"label":"LUNCH","time":"(12:05~01:10)","kind":"lunch","span":true,"text":"Lunch = 65min / (Gym Monitor: Strawberry Team TAs)"},
+  {"label":"Period 4","time":"(01:10~01:45) · 35min","kind":"period","span":false,"a":"Team Up and Solve It","b":"Sports"},
+  {"label":"Period 5","time":"(01:50~02:25) · 35min","kind":"period","span":false,"a":"Sports","b":"Team Up and Solve It"},
+  {"label":"Open House","time":"(02:30~03:00)","kind":"dismissal","span":true,"text":"Open House & Dismissal (sign out : Mihee/Sungjae)"},
+  {"label":"EoCamp Job","time":"","kind":"plain","span":true,"text":"Rooms back to original (all) & lock the front doors (Jongbin)"}]}
+]};
+
+
+
+/* ══════════ 상태 ══════════ */
+let accessToken=null,myEmail="",tokenClient=null;
+let dbFolderId=null,schedFileId=null;
+let schedule=null,curDay=0,dirty=false;
+const $=id=>document.getElementById(id);
+const toast=m=>{const t=$("toast");t.textContent=m;t.classList.add("show");
+  clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),3500);};
+const setDirty=v=>{dirty=v;$("dirtyNote").style.display=v?"inline":"none";};
+window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue="";}});
+
+/* ══════════ 인증 ══════════ */
+const initAuth=()=>{
+  tokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:CONFIG.clientId,
+    scope:"https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.email",
+    callback:(resp)=>{
+      if(resp.error){toast("로그인 실패: "+resp.error);return;}
+      accessToken=resp.access_token;
+      fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+accessToken}})
+      .then(r=>r.json()).then(info=>{
+        myEmail=(info.email||"").toLowerCase();
+        if(CONFIG.admins.indexOf(myEmail)<0){accessToken=null;$("deniedMsg").style.display="block";return;}
+        $("lockScreen").style.display="none";
+        $("panel").style.display="block";$("savebar").style.display="flex";
+        $("whoAmI").textContent="로그인: "+myEmail;
+        loadAll();
+      }).catch(()=>toast("계정 정보를 가져오지 못했습니다"));
+    }
+  });
+};
+$("signInBtn").addEventListener("click",()=>{
+  if(!tokenClient){if(window.google&&google.accounts)initAuth();
+    else{toast("Google 로그인 로딩 중… 잠시 후 다시 시도");return;}}
+  $("deniedMsg").style.display="none";tokenClient.requestAccessToken();
+});
+$("signOutBtn").addEventListener("click",()=>{
+  if(dirty&&!confirm("저장하지 않은 변경사항이 있습니다. 로그아웃할까요?"))return;
+  if(accessToken)google.accounts.oauth2.revoke(accessToken,function(){});location.reload();});
+window.addEventListener("load",()=>{if(window.google&&google.accounts)initAuth();});
+
+/* ══════════ Drive 헬퍼 ══════════ */
+const authHeaders=()=>({Authorization:"Bearer "+accessToken});
+const gFetch=(url,opt)=>fetch(url,Object.assign({},opt,{headers:Object.assign({},authHeaders(),(opt&&opt.headers)||{})}))
+  .then(r=>{if(!r.ok)return r.json().catch(()=>({})).then(d=>{
+      throw new Error((d.error&&d.error.message)||("HTTP "+r.status));});
+    return r.status===204?null:r.json();});
+const listChildren=(pid,extra)=>gFetch("https://www.googleapis.com/drive/v3/files?q="
+  +encodeURIComponent("'"+pid+"' in parents and trashed=false"+(extra||""))
+  +"&fields="+encodeURIComponent("files(id,name)")+"&pageSize=200").then(d=>d.files||[]);
+const createJson=(name,obj,parentId)=>{
+  const boundary="hctp"+Date.now();
+  const body=new Blob(["--"+boundary+"\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n"
+    +JSON.stringify({name:name,parents:[parentId]})
+    +"\r\n--"+boundary+"\r\nContent-Type: application/json\r\n\r\n",
+    JSON.stringify(obj),"\r\n--"+boundary+"--"]);
+  return fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id",
+    {method:"POST",headers:Object.assign({"Content-Type":"multipart/related; boundary="+boundary},authHeaders()),body:body})
+    .then(r=>{if(!r.ok)throw new Error("생성 실패 "+r.status);return r.json();});
+};
+const writeJson=(fileId,obj)=>fetch("https://www.googleapis.com/upload/drive/v3/files/"+fileId+"?uploadType=media",
+  {method:"PATCH",headers:Object.assign({"Content-Type":"application/json"},authHeaders()),
+   body:JSON.stringify(obj)}).then(r=>{if(!r.ok)throw new Error("저장 실패 ("+r.status+")");});
+
+/* ══════════ 불러오기 / 저장 ══════════ */
+async function loadAll(){
+  try{
+    toast("불러오는 중…");
+    const kids=await listChildren(CONFIG.rootFolder," and name='"+CONFIG.dbFolder+"' and mimeType='application/vnd.google-apps.folder'");
+    if(!kids.length)throw new Error("Drive에 db 폴더가 없습니다");
+    dbFolderId=kids[0].id;
+    const fs=await listChildren(dbFolderId," and name='"+CONFIG.scheduleFile+"'");
+    if(fs.length){
+      schedFileId=fs[0].id;
+      schedule=await gFetch("https://www.googleapis.com/drive/v3/files/"+schedFileId+"?alt=media");
+      if(!schedule||!Array.isArray(schedule.days))schedule=JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
+    }else{
+      schedule=JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
+      const created=await createJson(CONFIG.scheduleFile,schedule,dbFolderId);
+      schedFileId=created.id;
+    }
+    setDirty(false);render();toast("불러오기 완료 ✓");
+  }catch(e){toast("⚠ "+e.message);}
+}
+$("reloadBtn").addEventListener("click",()=>{
+  if(dirty&&!confirm("저장하지 않은 변경사항이 사라집니다. 다시 불러올까요?"))return;
+  loadAll();});
+$("saveBtn").addEventListener("click",async()=>{
+  const b=$("saveBtn");b.disabled=true;
+  try{await writeJson(schedFileId,schedule);setDirty(false);
+    toast("저장 완료 ✓ — schedule.html 새로고침 시 바로 반영됩니다");}
+  catch(e){toast("⚠ "+e.message);}
+  b.disabled=false;});
+$("resetBtn").addEventListener("click",()=>{
+  if(!confirm("전체 시간표를 원래 기본값으로 되돌릴까요?\n(저장을 눌러야 사이트에 반영됩니다)"))return;
+  schedule=JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));setDirty(true);render();});
+
+/* ══════════ 편집 UI ══════════ */
+const KIND_LABEL={bod:"준비",arrival:"등원",mfp:"자유놀이",period:"수업",lunch:"점심",dismissal:"하원",plain:"일반"};
+const esc=t=>String(t==null?"":t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+
+function render(){
+  const tabs=$("tabs");tabs.innerHTML="";
+  schedule.days.forEach((d,i)=>{
+    const b=document.createElement("button");
+    b.textContent=d.title.split(",")[0];
+    b.className=i===curDay?"on":"";
+    b.addEventListener("click",()=>{curDay=i;render();});
+    tabs.appendChild(b);
+  });
+  const day=schedule.days[curDay];
+  $("dayTitle").value=day.title;$("teamA").value=day.teamA;$("teamB").value=day.teamB;
+
+  const wrap=$("rows");wrap.innerHTML="";
+  day.rows.forEach((r,i)=>wrap.appendChild(rowEl(day,r,i)));
+}
+["dayTitle","teamA","teamB"].forEach(id=>$(id).addEventListener("input",()=>{
+  const d=schedule.days[curDay];
+  d.title=$("dayTitle").value;d.teamA=$("teamA").value;d.teamB=$("teamB").value;
+  setDirty(true);
+}));
+
+function paintCell(inp){
+  inp.style.background=CLASS_BG[classOf(inp.value)]||"#fff";
+}
+function rowEl(day,r,i){
+  const div=document.createElement("div");
+  div.className="erow card";
+  div.style.background=KIND_BG[r.kind]||"#fff";
+  div.innerHTML=
+    "<button class='mv up' title='위로'>▲</button>"+
+    "<button class='mv dn' title='아래로'>▼</button>"+
+    "<input class='f lab' value=\""+esc(r.label)+"\" placeholder='항목'>"+
+    "<input class='f tim' value=\""+esc(r.time)+"\" placeholder='(시간)'>"+
+    "<select class='f kind'>"+Object.keys(KIND_LABEL).map(k=>
+      "<option value='"+k+"'"+(r.kind===k?" selected":"")+">"+KIND_LABEL[k]+"</option>").join("")+"</select>"+
+    (r.span
+      ?"<input class='f txt wide cell' style='grid-column:span 2' value=\""+esc(r.text)+"\" placeholder='내용 (두 팀 공통)'>"
+      :"<input class='f ca cell' value=\""+esc(r.a)+"\" placeholder='Team A 수업'>"+
+       "<input class='f cb cell' value=\""+esc(r.b)+"\" placeholder='Team B 수업'>")+
+    "<select class='f mvday'><option value=''>요일 이동…</option>"+
+      schedule.days.map((d2,j)=>j===curDay?"":"<option value='"+j+"'>"+esc(d2.title.split(",")[0])+"</option>").join("")+
+    "</select>"+
+    "<button class='del' title='삭제'>✕</button>";
+
+  const q=sel=>div.querySelector(sel);
+  q(".up").addEventListener("click",()=>{if(i>0){day.rows.splice(i-1,0,day.rows.splice(i,1)[0]);setDirty(true);render();}});
+  q(".dn").addEventListener("click",()=>{if(i<day.rows.length-1){day.rows.splice(i+1,0,day.rows.splice(i,1)[0]);setDirty(true);render();}});
+  q(".lab").addEventListener("input",e=>{r.label=e.target.value;setDirty(true);});
+  q(".tim").addEventListener("input",e=>{r.time=e.target.value;setDirty(true);});
+  q(".kind").addEventListener("change",e=>{
+    r.kind=e.target.value;
+    const toSpan=(r.kind!=="period");
+    if(toSpan!==!!r.span){
+      if(toSpan){r.span=true;r.text=r.text||[r.a,r.b].filter(Boolean).join(" / ");delete r.a;delete r.b;}
+      else{r.span=false;r.a=r.a||"";r.b=r.b||"";delete r.text;}
+    }
+    setDirty(true);render();
+  });
+  if(r.span){
+    q(".txt").addEventListener("input",e=>{r.text=e.target.value;setDirty(true);});
+  }else{
+    const ca=q(".ca"),cb=q(".cb");
+    paintCell(ca);paintCell(cb);
+    ca.addEventListener("input",e=>{r.a=e.target.value;paintCell(ca);setDirty(true);});
+    cb.addEventListener("input",e=>{r.b=e.target.value;paintCell(cb);setDirty(true);});
+  }
+  q(".mvday").addEventListener("change",e=>{
+    const j=parseInt(e.target.value,10);
+    if(isNaN(j))return;
+    day.rows.splice(i,1);
+    schedule.days[j].rows.push(r);
+    setDirty(true);render();
+    toast(schedule.days[j].title.split(",")[0]+" 맨 아래로 이동했습니다");
+  });
+  q(".del").addEventListener("click",()=>{
+    if(!confirm("'"+(r.label||"이 줄")+"' 을 삭제할까요?"))return;
+    day.rows.splice(i,1);setDirty(true);render();
+  });
+  return div;
+}
+$("addRowBtn").addEventListener("click",()=>{
+  schedule.days[curDay].rows.push({label:"Period",time:"( ~ )",kind:"period",span:false,a:"",b:""});
+  setDirty(true);render();
+});
+</script>
+</body>
+</html>
