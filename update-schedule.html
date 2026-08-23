@@ -44,6 +44,26 @@
   .dayhead label{font-size:11px;color:var(--muted);display:block;margin-bottom:3px}
   .dayhead input{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff}
 
+  .colhead{display:grid;gap:6px;align-items:end;padding:2px 12px 4px;
+    grid-template-columns:26px 26px 130px 150px 96px 1fr 1fr 118px 30px;
+    font-size:11px;color:var(--muted)}
+  .colhead b{font-weight:500}
+  .colhead .ta{color:#3f6fa3}
+  .colhead .tb{color:#b05a86}
+  @media (max-width:900px){.colhead{display:none}}
+
+  .fld{position:relative}
+  .fld>span{position:absolute;top:-8px;left:8px;background:#fff;padding:0 6px;
+    font-size:9.5px;border-radius:6px;line-height:1.5;pointer-events:none;white-space:nowrap}
+  .fld.a>span{color:#3f6fa3;border:1px solid #cfe0f2}
+  .fld.b>span{color:#b05a86;border:1px solid #f2d5e3}
+  .fld.s>span{color:var(--muted);border:1px solid var(--line)}
+  .fld input{width:100%}
+  .fld.a input{border-left:3px solid #6f9fce}
+  .fld.b input{border-left:3px solid #d98fb0}
+  #teamA{border-left:3px solid #6f9fce}
+  #teamB{border-left:3px solid #d98fb0}
+
   .rows{display:grid;gap:8px}
   .erow{display:grid;gap:6px;align-items:center;padding:9px 10px;
     grid-template-columns:26px 26px 130px 150px 96px 1fr 1fr 118px 30px}
@@ -113,6 +133,7 @@
     <div><label>Team B 이름</label><input id="teamB" style="width:130px"></div>
   </div>
 
+  <div class="colhead" id="colHead"></div>
   <div class="rows" id="rows"></div>
   <button class="mini addrow" id="addRowBtn">＋ 줄 추가</button>
   <p class="note">↑↓ 순서 이동 · 종류를 바꾸면 배경색이 바뀝니다 · "요일 이동"을 고르면 그 요일 맨 아래로 옮겨집니다 ·
@@ -336,14 +357,23 @@ function render(){
   const day=schedule.days[curDay];
   $("dayTitle").value=day.title;$("teamA").value=day.teamA;$("teamB").value=day.teamB;
 
+  $("colHead").innerHTML=
+    "<span></span><span></span><b>항목</b><b>시간</b><b>종류</b>"+
+    "<b class='ta'>🥥 Team A · "+esc(day.teamA)+"</b>"+
+    "<b class='tb'>🍓 Team B · "+esc(day.teamB)+"</b>"+
+    "<b>요일 이동</b><span></span>";
+
   const wrap=$("rows");wrap.innerHTML="";
   day.rows.forEach((r,i)=>wrap.appendChild(rowEl(day,r,i)));
 }
-["dayTitle","teamA","teamB"].forEach(id=>$(id).addEventListener("input",()=>{
-  const d=schedule.days[curDay];
-  d.title=$("dayTitle").value;d.teamA=$("teamA").value;d.teamB=$("teamB").value;
-  setDirty(true);
-}));
+["dayTitle","teamA","teamB"].forEach(id=>{
+  $(id).addEventListener("input",()=>{
+    const d=schedule.days[curDay];
+    d.title=$("dayTitle").value;d.teamA=$("teamA").value;d.teamB=$("teamB").value;
+    setDirty(true);
+  });
+  $(id).addEventListener("change",render);   /* 팀 이름 바꾸면 라벨/헤더 갱신 */
+});
 
 function paintCell(inp){
   inp.style.background=CLASS_BG[classOf(inp.value)]||"#fff";
@@ -360,9 +390,12 @@ function rowEl(day,r,i){
     "<select class='f kind'>"+Object.keys(KIND_LABEL).map(k=>
       "<option value='"+k+"'"+(r.kind===k?" selected":"")+">"+KIND_LABEL[k]+"</option>").join("")+"</select>"+
     (r.span
-      ?"<input class='f txt wide cell' style='grid-column:span 2' value=\""+esc(r.text)+"\" placeholder='내용 (두 팀 공통)'>"
-      :"<input class='f ca cell' value=\""+esc(r.a)+"\" placeholder='Team A 수업'>"+
-       "<input class='f cb cell' value=\""+esc(r.b)+"\" placeholder='Team B 수업'>")+
+      ?"<div class='fld s wide' style='grid-column:span 2'><span>공통 (두 팀)</span>"+
+         "<input class='f txt cell' value=\""+esc(r.text)+"\" placeholder='내용 (두 팀 공통)'></div>"
+      :"<div class='fld a'><span>A · "+esc(day.teamA)+"</span>"+
+         "<input class='f ca cell' value=\""+esc(r.a)+"\" placeholder='Team A 수업'></div>"+
+       "<div class='fld b'><span>B · "+esc(day.teamB)+"</span>"+
+         "<input class='f cb cell' value=\""+esc(r.b)+"\" placeholder='Team B 수업'></div>")+
     "<select class='f mvday'><option value=''>요일 이동…</option>"+
       schedule.days.map((d2,j)=>j===curDay?"":"<option value='"+j+"'>"+esc(d2.title.split(",")[0])+"</option>").join("")+
     "</select>"+
