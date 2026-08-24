@@ -289,29 +289,22 @@ const CONFIG = {
   rosterFileName: "hctp-2026-roster.json",
   teamNames: ["Coconut","Strawberry","TA"],   /* TA = 세 번째 그룹 (뷰어에선 "TAs"로 표시) */
 
-  /* Quotas: photoMax = PER DAY. A number means the same limit every day;
-     an object {day1:..,day5:..} sets a different limit per day.
-     videoMax = total.
-     - Kyungchul carries the couple quota with Ellen (10/day, 10 videos)
-     - Jongbin's account also hosts part-time teacher Hyejun Lim
-       (Team Up & Solve It, Wed-Thu-Fri): +5 on day3/4/5, +5 videos
-     - Mihee's account also hosts part-timers Juyoung Lee (Taekwondo,
-       Mon-Tue) and Soohyun Woo (Cooking, Tue-Wed): +5 day1, +10 day2,
-       +5 day3, +10 videos
+  /* Quotas: photoMax = PER DAY (number = same every day,
+     object {day1:..} = per-day). videoMax = total.
+     현재 정책: Henry 사진 50/일, 나머지 선생님 30/일, 비디오는 전원 20.
+     (파트타임 몫은 30/일 안에 충분히 포함되므로 별도 가산 없음)
      Camp days: day1=Mon .. day5=Fri */
   teachers: [
-    { name:"Hae-young Chun",    first:"haeyoung",  email:"hyc333@yahoo.com",     photoMax:5,  videoMax:5  },
-    { name:"Henry Hongsok",     first:"henry",     email:"hongskwon@gmail.com",  photoMax:5,  videoMax:5  },
+    { name:"Hae-young Chun",    first:"haeyoung",  email:"hyc333@yahoo.com",     photoMax:30, videoMax:20 },
+    { name:"Henry Hongsok",     first:"henry",     email:"hongskwon@gmail.com",  photoMax:50, videoMax:20 },
     { name:"Ellen Lee",         first:"ellen",     email:"sjsend@hotmail.com",   photoMax:0,  videoMax:0,
       note:"uploads via Kyungchul (couple quota)" },
-    { name:"Jongbin Ym",        first:"jongbin",   email:"benchvue101@gmail.com",
-      photoMax:{day1:5,day2:5,day3:10,day4:10,day5:10}, videoMax:10,
+    { name:"Jongbin Ym",        first:"jongbin",   email:"benchvue101@gmail.com",photoMax:30, videoMax:20,
       note:"+ part-time teacher Hyejun Lim (Wed-Fri)" },
-    { name:"Mihee Kang",        first:"mihee",     email:"mihekang@gmail.com",
-      photoMax:{day1:10,day2:15,day3:10,day4:5,day5:5}, videoMax:15,
+    { name:"Mihee Kang",        first:"mihee",     email:"mihekang@gmail.com",   photoMax:30, videoMax:20,
       note:"+ part-time teachers Juyoung Lee (Mon-Tue) & Soohyun Woo (Tue-Wed)" },
-    { name:"Kyungchul Lee",     first:"kyungchul", email:"kcsend@gmail.com",     photoMax:10, videoMax:10,
-      note:"couple quota with Ellen (10 per day / 10 videos)" }
+    { name:"Kyungchul Lee",     first:"kyungchul", email:"kcsend@gmail.com",     photoMax:30, videoMax:20,
+      note:"couple quota with Ellen (shared account)" }
   ]
 };
 
