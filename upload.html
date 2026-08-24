@@ -98,6 +98,18 @@
   .empty-note{font-size:12px;color:var(--muted);padding:8px 2px}
   .busy{opacity:.45;pointer-events:none}
 
+  /* ── Feedback (선생님 전달사항) ── */
+  .fb-card{padding:20px 22px;line-height:1.85;font-size:13.5px}
+  .fb-card h3{font-size:14.5px;font-weight:500;color:var(--gold);
+    margin:18px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--line)}
+  .fb-card h3:first-child{margin-top:0}
+  .fb-card ul{margin:0;padding-left:20px}
+  .fb-card li{margin:3px 0}
+  .fb-card b{font-weight:500;color:var(--ink)}
+  .fb-card .fb-note{color:var(--muted);font-size:12px}
+  .fb-tag{display:inline-block;font-size:11px;color:#fff;background:var(--gold);
+    border-radius:20px;padding:2px 10px;margin-left:8px;vertical-align:2px}
+
   /* ── 학생 사진 관리 (super admin) ── */
   #studentAdmin{display:none}
   .stu-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
@@ -199,6 +211,48 @@
 
   <h2 class="sec" id="videosTitle">My Videos <small>· first uploaded, first shown</small></h2>
   <div id="videoRoot"></div>
+
+  <!-- ══════════ Feedback · 선생님 전달사항 ══════════ -->
+  <h2 class="sec">Feedback <small>· 첫날 미팅 전달사항 (8/24)</small></h2>
+  <div class="fb-card card">
+
+    <h3>1. 출석 현황 <span class="fb-tag">결석 5명</span></h3>
+    <ul>
+      <li>Alexander Suarez</li>
+      <li>Alex Dushane</li>
+      <li>Belle Rodriguez <span class="fb-note">— 병원 예약</span></li>
+      <li>Jacob Ynoa <span class="fb-note">— 아픔</span></li>
+      <li>Andrra Velillari</li>
+    </ul>
+
+    <h3>2. 시설 및 간식</h3>
+    <ul>
+      <li><b>화장실 휴지통</b>을 수시로 확인하고 잘 비워 주세요.</li>
+      <li>디저트로 <b>과일이 함께 제공되면 좋겠습니다.</b></li>
+    </ul>
+
+    <h3>3. 내년도 학생 선발</h3>
+    <ul>
+      <li>등록 후 실제 캠프에 참석하지 않는 학생들이 있는 점을 고려하여,
+        내년에는 <b>약 36명 정도를 선발하자</b>는 의견이 있었습니다.</li>
+    </ul>
+
+    <h3>4. 학생 돌봄 및 점심시간</h3>
+    <ul>
+      <li><b>소외감을 느끼는 아이가 없도록</b> 학생들을 세심하게 살펴 주세요.</li>
+      <li>점심시간에는 <b>Strawberry 팀과 Coconut 팀이 함께 어울려 식사</b>할 수 있도록 안내해 주세요.</li>
+      <li>점심시간에 <b>전체 학생 수 확인(Head Count)</b> 후, <b>모든 학생이 점심을 받아
+        식사하고 있는지</b> 확인해 주세요.</li>
+    </ul>
+
+    <h3>5. 하원 지도 <span class="fb-note">(2:50 – 3:00 PM)</span></h3>
+    <ul>
+      <li>보호자가 도착한 학생부터 <b>한 명씩 안전하게 귀가</b>할 수 있도록 안내해 주세요.</li>
+      <li>하원 시간에 체육관에서 공놀이는 원활한 하원 진행에 방해가 되므로 삼가도록 지도해 주세요.</li>
+      <li>기다리는 동안에는 <b>젠가, 공기놀이, 카드게임</b> 등 차분한 놀이를 하도록 안내해 주세요.</li>
+    </ul>
+
+  </div>
 </div>
 
 <!-- 학생/단체 사진 관리 — super admin에게만 표시 -->
@@ -299,8 +353,8 @@ const CONFIG = {
     { name:"Henry Hongsok",     first:"henry",     email:"hongskwon@gmail.com",  photoMax:50, videoMax:20 },
     { name:"Ellen Lee",         first:"ellen",     email:"sjsend@hotmail.com",   photoMax:0,  videoMax:0,
       note:"uploads via Kyungchul (couple quota)" },
-    { name:"Jongbin Ym",        first:"jongbin",   email:"benchvue101@gmail.com",photoMax:30, videoMax:20,
-      note:"+ part-time teacher Hyejun Lim (Wed-Fri)" },
+    { name:"Jongbin Ym",        first:"jongbin",   email:"benchvue101@gmail.com",photoMax:100,videoMax:20,
+      note:"super admin · + part-time teacher Hyejun Lim (Wed-Fri)" },
     { name:"Mihee Kang",        first:"mihee",     email:"mihekang@gmail.com",   photoMax:30, videoMax:20,
       note:"+ part-time teachers Juyoung Lee (Mon-Tue) & Soohyun Woo (Tue-Wed)" },
     { name:"Kyungchul Lee",     first:"kyungchul", email:"kcsend@gmail.com",     photoMax:30, videoMax:20,
