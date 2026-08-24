@@ -1120,9 +1120,10 @@
     });
 
     Object.keys(groups).sort().forEach(team => {
+      const isTA = team.toLowerCase() === "ta";
       const block = document.createElement("div");
       block.className = "team-block";
-      block.innerHTML = "<h3 class='team-name'>Team " + team + "</h3>";
+      block.innerHTML = "<h3 class='team-name'>" + (isTA ? "TAs" : "Team " + team) + "</h3>";
       const grid = document.createElement("div");
       grid.className = "stu-grid";
       groups[team]
@@ -1136,7 +1137,7 @@
           b.innerHTML = "<span class='stu-thumb'><img loading='lazy' decoding='async' alt='" + full + "'></span>"
                       + "<span class='stu-name'>" + first + "</span>";
           b.querySelector("img").src = src;
-          b.addEventListener("click", () => lb.openSolo(src, full + " · Team " + team));
+          b.addEventListener("click", () => lb.openSolo(src, full + (isTA ? " · TA" : " · Team " + team)));
           grid.appendChild(b);
         });
       block.appendChild(grid);

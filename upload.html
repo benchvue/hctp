@@ -287,7 +287,7 @@ const CONFIG = {
   groupFolder: "group",
   groupMax: 5,
   rosterFileName: "hctp-2026-roster.json",
-  teamNames: ["Coconut","Strawberry"],
+  teamNames: ["Coconut","Strawberry","TA"],   /* TA = 세 번째 그룹 (뷰어에선 "TAs"로 표시) */
 
   /* Quotas: photoMax = PER DAY. A number means the same limit every day;
      an object {day1:..,day5:..} sets a different limit per day.
@@ -801,6 +801,10 @@ const DEFAULT_ROSTER={
     "Maddox Anderson","Noelle Sanchez","Suah Kwon","Giovanni Buscio",
     "JohnPaul Buscio","Elisha Ha","FRANCISCO SUAREZ","Benjamin Alfaro",
     "Sara Djuteski","Alex Dushane","Maxim Janevski"
+  ],
+  "TA":[
+    "Aaron Han","Audrey Choi","Daniel Ryu","Jake Lee",
+    "Benjamin Choi","Dylan Gallant","Alice Kwon"
   ]
 };
 let cropMode="student";            /* 'student' | 'group' */
@@ -865,6 +869,17 @@ async function loadRoster(){
       });
     });
     roster.seeded=true;
+    normalizeRoster();
+    changed=true;
+  }
+  /* TA 명단 1회 병합 — 이미 seeded된 기존 db에도 TA만 추가되도록 별도 플래그 */
+  if(!roster.taSeeded){
+    (DEFAULT_ROSTER["TA"]||[]).forEach(n=>{
+      const tc=titleCase(n);
+      if(!roster.teams["TA"].some(x=>x.toLowerCase()===tc.toLowerCase()))
+        roster.teams["TA"].push(tc);
+    });
+    roster.taSeeded=true;
     normalizeRoster();
     changed=true;
   }
