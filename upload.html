@@ -141,6 +141,19 @@
   .ch.w{left:-8px;top:50%;margin-top:-7px;cursor:ew-resize}
   .ch.e{right:-8px;top:50%;margin-top:-7px;cursor:ew-resize}
   .crop-btns{display:flex;gap:8px;flex-wrap:wrap}
+  .crop-flex{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+  .crop-flex .crop-stage{flex:1 1 320px;max-width:640px;margin:0}
+  .crop-preview{flex:0 0 auto;text-align:center;padding:14px 18px;
+    border:1px dashed var(--line);border-radius:12px;background:#fdfcf8}
+  .prev-label{font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:12px}
+  .prev-thumb{display:block;width:76px;height:76px;border-radius:50%;overflow:hidden;
+    border:2px solid #c8ab6e;margin:0 auto;background:#efeadd;
+    box-shadow:0 8px 18px -10px rgba(90,70,30,.55)}
+  .prev-thumb canvas{width:100%;height:100%;display:block}
+  .prev-name{display:block;margin-top:8px;font-size:12px;color:var(--ink);letter-spacing:.03em}
+  .prev-group canvas{width:260px;height:auto;display:block;border-radius:12px;
+    border:1px solid var(--line);box-shadow:0 8px 18px -12px rgba(90,70,30,.4)}
   .btn-gold{border:1px solid var(--gold);border-radius:999px;background:var(--gold);color:#fff;
     font-size:13px;padding:9px 20px}
   .btn-gold:disabled{opacity:.5}
@@ -285,12 +298,24 @@
   <div class="upwrap card" id="cropArea" style="display:none">
     <div class="hintline">얼굴/원하는 부분에 네모를 맞춰 주세요 — 네모를 <b>끌면 이동</b>,
       8개 손잡이를 끌면 <b>크기 조절</b>됩니다. 업로드 시 WebP로 변환됩니다.</div>
-    <div class="crop-stage" id="cropStage">
-      <img id="cropImg" alt="crop source">
-      <div class="crop-box" id="cropBox">
-        <div class="ch nw"></div><div class="ch n"></div><div class="ch ne"></div>
-        <div class="ch e"></div><div class="ch se"></div><div class="ch s"></div>
-        <div class="ch sw"></div><div class="ch w"></div>
+    <div class="crop-flex">
+      <div class="crop-stage" id="cropStage">
+        <img id="cropImg" alt="crop source">
+        <div class="crop-box" id="cropBox">
+          <div class="ch nw"></div><div class="ch n"></div><div class="ch ne"></div>
+          <div class="ch e"></div><div class="ch se"></div><div class="ch s"></div>
+          <div class="ch sw"></div><div class="ch w"></div>
+        </div>
+      </div>
+      <div class="crop-preview">
+        <div class="prev-label">뷰어 미리보기</div>
+        <div id="prevStu">
+          <span class="prev-thumb"><canvas id="prevCanvas" width="152" height="152"></canvas></span>
+          <span class="prev-name" id="prevName"></span>
+        </div>
+        <div id="prevGroup" class="prev-group" style="display:none">
+          <canvas id="prevGCanvas" width="520" height="340"></canvas>
+        </div>
       </div>
     </div>
     <div class="crop-btns">
@@ -1081,6 +1106,29 @@ const stage=$("cropStage"), cropImg=$("cropImg"), cropBox=$("cropBox");
 function paintBox(){
   cropBox.style.left=cb.x+"px";cropBox.style.top=cb.y+"px";
   cropBox.style.width=cb.w+"px";cropBox.style.height=cb.h+"px";
+  updatePreview();
+}
+/* 뷰어에 표시될 모습 그대로 실시간 미리보기 */
+function updatePreview(){
+  if(!stuSrcFile)return;
+  const im=cropImg;
+  if(!im.naturalWidth||!im.clientWidth)return;
+  const sc=im.naturalWidth/im.clientWidth;
+  const sx=cb.x*sc, sy=cb.y*sc, sw=cb.w*sc, sh=cb.h*sc;
+  if(cropMode==="group"){
+    const c=$("prevGCanvas");
+    const W=520, H=Math.max(60,Math.min(700,Math.round(W*sh/sw)));
+    if(c.width!==W||c.height!==H){c.width=W;c.height=H;}
+    const g=c.getContext("2d");
+    g.clearRect(0,0,W,H);
+    g.drawImage(im,sx,sy,sw,sh,0,0,W,H);           /* 단체: 잘린 영역 전체 */
+  }else{
+    const c=$("prevCanvas"), g=c.getContext("2d");
+    const side=Math.min(sw,sh);                     /* 원형 썸네일은 중앙 cover */
+    const cx=sx+(sw-side)/2, cy=sy+(sh-side)/2;
+    g.clearRect(0,0,c.width,c.height);
+    g.drawImage(im,cx,cy,side,side,0,0,c.width,c.height);
+  }
 }
 function clampBox(){
   const W=cropImg.clientWidth,H=cropImg.clientHeight,MIN=40;
@@ -1121,6 +1169,13 @@ function openCropper(file){
       : {x:(W-sz)/2,y:(H-sz)/2,w:sz,h:sz};
     clampBox();paintBox();
     $("cropUpload").textContent=cropMode==="group"?"잘라서 업로드 (단체 사진 추가)":"잘라서 업로드 (등록/교체)";
+    $("prevStu").style.display=cropMode==="group"?"none":"block";
+    $("prevGroup").style.display=cropMode==="group"?"block":"none";
+    if(cropMode!=="group"){
+      const full=$("stuName").value||"";
+      $("prevName").textContent=titleCase(full.split(" ")[0]||"");
+    }
+    updatePreview();
     $("cropArea").scrollIntoView({behavior:"smooth",block:"center"});
     stuSrcFile={img:cropImg,file};
   };
