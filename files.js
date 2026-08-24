@@ -685,32 +685,5 @@
                  "group":  [
                                "group-1.webp"
                            ]
-             },
-    "2026":  {
-                 "day1":  [
-
-                          ],
-                 "day2":  [
-
-                          ],
-                 "day3":  [
-
-                          ],
-                 "day4":  [
-
-                          ],
-                 "day5":  [
-
-                          ],
-                 "videos":  [
-                                "henry-1.mp4",
-                                "henry-2.mp4"
-                            ],
-                 "students":  [
-
-                              ],
-                 "group":  [
-
-                           ]
              }
 };

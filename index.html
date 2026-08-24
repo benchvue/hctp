@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -471,6 +471,17 @@
     padding: 14px;
   }
   .lightbox.open{ display: flex; }
+  .lightbox iframe{
+    display:none;
+    width:min(96vw, 960px);
+    aspect-ratio:16/9;
+    max-height:92vh;
+    border:1px solid var(--card-border);
+    border-radius:14px;
+    background:#000;
+    box-shadow:0 30px 80px -20px rgba(0,0,0,.9);
+  }
+  .lightbox iframe.active{display:block}
   .lightbox video, .lightbox img{
     max-width: 100%;
     max-height: 92vh;
@@ -632,23 +643,92 @@
     <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
   </button>
   <video id="lbVideo" controls playsinline></video>
+  <iframe id="lbFrame" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>
   <img id="lbImg" alt="Enlarged camp photo">
   <p class="lb-caption" id="lbCaption"></p>
 </div>
 
 <script>
-  /* files.js(사진 목록)와 origmap.js(원본 다운로드 매핑)는 매일 갱신되므로
-     캐시를 우회해 항상 최신을 로드 */
+  /* files.js는 2025(아카이브) 전용 — 2026부터는 Drive에서 직접 스트리밍 */
   document.write('<script src="files.js?ts=' + Date.now() + '"><\/script>');
-  document.write('<script src="origmap.js?ts=' + Date.now() + '"><\/script>');
 </script>
 <script>
   /* ══════════════ 데이터 ══════════════
      files.js 는 generate-files.ps1 실행으로 자동 생성됩니다.
      window.HCTP_FILES = { "2025": { day1:[...], ..., videos:[...] }, "2026": {...} } */
-  const FILES = window.HCTP_FILES || {};
-  const ORIG  = window.HCTP_ORIG  || {};   /* {"2026":{"day1/jongbin-1.webp":{id,n},...}} */
+  const FILES = window.HCTP_FILES || {};   /* 2025 archive (repo files) */
   const DL_FROM_YEAR = 2026;               /* 2025는 원본이 없어 다운로드 버튼 없음 */
+
+  /* ── Google Drive 직접 스트리밍 (2026+) ──
+     repo에 미디어를 넣지 않고, 폴더를 API 키로 실시간 조회해서
+     사진은 lh3 CDN으로, 비디오는 Drive 플레이어(iframe)로 보여줍니다.
+     → 선생님이 업로드하면 publish 없이 새로고침만으로 반영됩니다. */
+  const DRIVE = {
+    apiKey: "PASTE_BROWSER_API_KEY_HERE",   /* Drive API · HTTP referrer: https://benchvue.github.io/* */
+    years: { "2026": "1Roissh94L1dbhzTSnYEN5IbchacskgbH" }
+  };
+  const DFILES = {};        /* year -> {day1:[{n,id}],...,videos,students,group,orig:{}} */
+  let driveLoading = false;
+
+  async function loadDriveYear(year, rootId){
+    const key = DRIVE.apiKey;
+    if (!key || key.indexOf("PASTE_") === 0) return;
+    const list = q => fetch("https://www.googleapis.com/drive/v3/files?q=" + encodeURIComponent(q)
+        + "&fields=" + encodeURIComponent("files(id,name,mimeType,createdTime)")
+        + "&pageSize=1000&key=" + key)
+      .then(r => r.json()).then(d => d.files || []);
+    const kids = await list("'" + rootId + "' in parents and trashed=false and mimeType='application/vnd.google-apps.folder'");
+    const fid = n => { const f = kids.find(k => k.name === n); return f && f.id; };
+    const WEBP = /\.webp$/i, ORIGX = /\.(jpe?g|png|heic|heif)$/i, MP4 = /\.mp4$/i;
+    const y = { day1:[], day2:[], day3:[], day4:[], day5:[], videos:[], students:[], group:[], orig:{} };
+
+    for (const d of ["day1","day2","day3","day4","day5","group"]){
+      const id = fid(d); if (!id) continue;
+      const fl = await list("'" + id + "' in parents and trashed=false");
+      fl.filter(f => WEBP.test(f.name)).sort((a,b) => a.name < b.name ? -1 : 1)
+        .forEach(f => y[d].push({ n: f.name, id: f.id }));
+      /* webp ↔ 같은 이름의 원본(jpg 등) 매핑 → 다운로드 메뉴에서 사용 */
+      fl.filter(f => ORIGX.test(f.name)).forEach(o => {
+        const base = o.name.replace(/\.[^.]+$/, "");
+        const w = fl.find(f => WEBP.test(f.name) && f.name.replace(/\.webp$/i, "") === base);
+        if (w) y.orig[d + "/" + w.name] = { id: o.id, n: o.name };
+      });
+    }
+    const vid = fid("video");
+    if (vid){
+      (await list("'" + vid + "' in parents and trashed=false"))
+        .filter(f => MP4.test(f.name))
+        .sort((a,b) => a.createdTime < b.createdTime ? -1 : 1)   /* first uploaded, first shown */
+        .forEach(f => y.videos.push({ n: f.name, id: f.id }));
+    }
+    const st = fid("students");
+    if (st){
+      (await list("'" + st + "' in parents and trashed=false"))
+        .filter(f => WEBP.test(f.name)).sort((a,b) => a.name < b.name ? -1 : 1)
+        .forEach(f => y.students.push({ n: f.name, id: f.id }));
+    }
+    DFILES[year] = y;
+  }
+
+  async function loadAllDriveYears(){
+    driveLoading = true;
+    await Promise.all(Object.keys(DRIVE.years).map(yy =>
+      loadDriveYear(yy, DRIVE.years[yy]).catch(function(){})));
+    driveLoading = false;
+  }
+
+  /* 연도·폴더의 미디어 목록: Drive 연도면 {n,id}, repo(2025)면 {n} */
+  function itemsOf(year, folder){
+    if (DFILES[year]) return DFILES[year][folder] || [];
+    const ext = folder === "videos" ? VID_EXT : IMG_EXT;
+    return arr(yearData(year)[folder]).filter(f => ext.test(f)).map(n => ({ n: n }));
+  }
+  /* 이미지 표시 URL: Drive면 lh3 CDN(크기 지정), repo면 상대경로 */
+  const imgSrc = (year, folder, it, w) => it.id
+    ? "https://lh3.googleusercontent.com/d/" + it.id + "=w" + (w || 1600)
+    : year + "/" + folder + "/" + encodeURIComponent(it.n);
+  const origOf = (year, folder, it) =>
+    (DFILES[year] && DFILES[year].orig[folder + "/" + it.n]) || null;
   const DAY_KEYS = ["day1","day2","day3","day4","day5"];
   const DAY_LABELS = { day1:"Day 1", day2:"Day 2", day3:"Day 3", day4:"Day 4", day5:"Day 5" };
   const IMG_EXT = /\.(webp|jpe?g|png)$/i;
@@ -718,22 +798,36 @@
   const canDownload = year => parseInt(year, 10) >= DL_FROM_YEAR;
   const origFor = (year, folder, file) => (ORIG[year] || {})[folder + "/" + file] || null;
 
-  /* 사진: 원본이 Drive에 있으면 원본, 없으면 webp 자체를 다운로드 */
-  function menuForPhoto(year, folder, file){
-    const rel = year + "/" + folder + "/" + encodeURIComponent(file);
-    const abs = new URL(rel, location.href).href;
-    const o = origFor(year, folder, file);
-    openMediaMenu(o ? {
-      dlUrl:  "https://drive.google.com/uc?export=download&id=" + o.id,
-      dlName: o.n, copyUrl: abs, sameOrigin: false
-    } : {
-      dlUrl: rel, dlName: file, copyUrl: abs, sameOrigin: true
-    });
+  /* 사진: 원본(jpg)이 있으면 원본, 없으면 webp를 다운로드 */
+  function menuForPhoto(year, folder, it){
+    const o = origOf(year, folder, it);
+    if (it.id){   /* Drive 스트리밍 항목 */
+      const target = o || { id: it.id, n: it.n };
+      openMediaMenu({
+        dlUrl: "https://drive.google.com/uc?export=download&id=" + target.id,
+        dlName: target.n,
+        copyUrl: "https://drive.google.com/file/d/" + (o ? o.id : it.id) + "/view",
+        sameOrigin: false
+      });
+    } else {      /* repo(2025) — 버튼이 없지만 안전용 */
+      const rel = year + "/" + folder + "/" + encodeURIComponent(it.n);
+      openMediaMenu({ dlUrl: rel, dlName: it.n,
+        copyUrl: new URL(rel, location.href).href, sameOrigin: true });
+    }
   }
-  function menuForVideo(year, file){
-    const rel = year + "/videos/" + encodeURIComponent(file);
-    const abs = new URL(rel, location.href).href;
-    openMediaMenu({ dlUrl: rel, dlName: file, copyUrl: abs, sameOrigin: true });
+  function menuForVideo(year, it){
+    if (it.id){
+      openMediaMenu({
+        dlUrl: "https://drive.google.com/uc?export=download&id=" + it.id,
+        dlName: it.n,
+        copyUrl: "https://drive.google.com/file/d/" + it.id + "/view",
+        sameOrigin: false
+      });
+    } else {
+      const rel = year + "/videos/" + encodeURIComponent(it.n);
+      openMediaMenu({ dlUrl: rel, dlName: it.n,
+        copyUrl: new URL(rel, location.href).href, sameOrigin: true });
+    }
   }
 
   /* ══════════════ 배경음악 (BGM) ══════════════
@@ -827,13 +921,15 @@
 
   /* 기본 연도: files.js에 있는 가장 최신 연도 (지금은 2026,
      내년에 2027 폴더가 생기면 자동으로 2027이 기본이 됨) */
-  let pillYears = Object.keys(FILES).sort().reverse();   /* newest year first */
+  let pillYears = [...new Set([...Object.keys(FILES), ...Object.keys(DRIVE.years)])]
+    .sort().reverse();                                   /* newest year first */
   if (!pillYears.length) pillYears = ["2026"];
   let curYear = pillYears[0];
 
   /* ══════════════ 라이트박스 ══════════════ */
   const lightbox = document.getElementById("lightbox");
   const lbVideo  = document.getElementById("lbVideo");
+  const lbFrame  = document.getElementById("lbFrame");
   const lbImg    = document.getElementById("lbImg");
   const lbCap    = document.getElementById("lbCaption");
   const lb = {
@@ -861,10 +957,22 @@
       lbImg.classList.add("active");
       lbCap.textContent=caption;
     },
+    openDriveVideo(fileId){
+      this.imgCtrl = null;
+      this.open = true;
+      bgm.pauseForVideo();
+      lbImg.classList.remove("active");
+      lbVideo.classList.remove("active");
+      lightbox.classList.remove("img-mode", "solo");
+      lightbox.classList.add("open");
+      lbFrame.src = "https://drive.google.com/file/d/" + fileId + "/preview";
+      lbFrame.classList.add("active");
+    },
     openVideo(src){
       this.imgCtrl = null;
       this.open = true;
       bgm.pauseForVideo();                 /* 비디오 재생 동안 배경음악 일시정지 */
+      lbFrame.classList.remove("active");
       lbImg.classList.remove("active");
       lightbox.classList.remove("img-mode");
       lightbox.classList.add("open");
@@ -880,6 +988,8 @@
       lbVideo.removeAttribute("src");
       lbVideo.load();
       lbVideo.classList.remove("active");
+      lbFrame.removeAttribute("src");      /* Drive 플레이어 정지 */
+      lbFrame.classList.remove("active");
       lbImg.classList.remove("active");
       lbImg.removeAttribute("src");
       bgm.resumeAfterVideo();              /* 끊겼던 배경음악 이어서 재생 */
@@ -915,7 +1025,7 @@
 
   function createDayCard(year, key){
     const label = DAY_LABELS[key] || key;
-    const files = shuffle(arr(yearData(year)[key]).filter(f => IMG_EXT.test(f)));
+    const files = shuffle(itemsOf(year, key).slice());
 
     const card  = document.createElement("section");
     card.className = "day-card";
@@ -929,8 +1039,9 @@
     /* 사진이 아직 없는 연도 (예: 2026 준비 전) */
     if (!files.length){
       frame.classList.add("empty");
+      const msg = (driveLoading && DRIVE.years[year]) ? "Loading…" : "Coming&nbsp;Soon";
       frame.innerHTML =
-        '<div class="coming"><span>' + label + '</span><small>Coming Soon</small></div>';
+        '<div class="coming"><span>' + label + '</span><small>' + msg + '</small></div>';
       return { el: card, label, idx:0, length:0,
                currentSrc(){ return ""; }, step(){}, setActive(){}, tick(){} };
     }
@@ -950,7 +1061,7 @@
     const counter = frame.querySelector(".slide-counter");
 
     let idx = 0, front = imgA, back = imgB, active = false, loading = false;
-    const src = i => year + "/" + key + "/" + encodeURIComponent(files[i]);
+    const src = i => imgSrc(year, key, files[i], 1600);
 
     function show(i){
       if (loading) return;
@@ -978,7 +1089,7 @@
     frame.addEventListener("click", e => {
       if (e.target.closest(".s-prev")) { show(idx - 1); return; }
       if (e.target.closest(".s-next")) { show(idx + 1); return; }
-      if (e.target.closest(".dl-btn")) { menuForPhoto(year, key, files[idx]); return; }
+      if (e.target.closest(".dl-btn")) { menuForPhoto(year, key, files[idx]); return; }   /* item 전달 */
       lb.openImage(ctrl);
     });
     frame.addEventListener("keydown", e => {
@@ -1033,29 +1144,27 @@
   function buildVideos(year){
     const gal = document.getElementById("videoGallery");
     gal.innerHTML = "";
-    const list = arr(yearData(year).videos).filter(f => VID_EXT.test(f));   /* keep manifest order: first uploaded, first shown */
+    const list = itemsOf(year, "videos");   /* Drive: createdTime 순 / repo: manifest 순 */
 
     if (!list.length){
-      gal.innerHTML = '<p class="video-empty">Coming Soon</p>';
+      gal.innerHTML = '<p class="video-empty">' +
+        ((driveLoading && DRIVE.years[year]) ? "Loading…" : "Coming Soon") + '</p>';
       return;
     }
 
-    list.forEach((f, i) => {
-      const srcPath   = year + "/videos/" + encodeURIComponent(f);
-      const thumbPath = year + "/videos/thumbs/" +
-                        encodeURIComponent(f.replace(/\.mp4$/i, "") + ".webp");
+    list.forEach((it, i) => {
       const vcard = document.createElement("button");
       vcard.className = "vcard";
-      vcard.setAttribute("aria-label", "Play " + classLabel(f) + " video " + (i + 1));
+      vcard.setAttribute("aria-label", "Play " + classLabel(it.n) + " video " + (i + 1));
       vcard.innerHTML =
         '<div class="thumb">' +
-          '<img loading="lazy" decoding="async" alt="' + classLabel(f) + ' video preview">' +
+          '<img loading="lazy" decoding="async" alt="' + classLabel(it.n) + ' video preview">' +
           playIcon +
-          '<span class="vlabel">' + classLabel(f) + '</span>' +
+          '<span class="vlabel">' + classLabel(it.n) + '</span>' +
           (canDownload(year) ? DL_ICON : '') +
         '</div>';
 
-      /* 썸네일 이미지가 없으면(생성 실패 등) 안내 카드로 대체 */
+      /* Drive 비디오는 Drive가 만들어주는 썸네일 사용, repo(2025)는 thumbs 폴더 */
       const im = vcard.querySelector("img");
       im.addEventListener("error", () => {
         const fb = document.createElement("div");
@@ -1063,11 +1172,14 @@
         fb.innerHTML = "<span>Video</span>";
         im.replaceWith(fb);
       }, { once: true });
-      im.src = thumbPath;
+      im.src = it.id
+        ? "https://drive.google.com/thumbnail?id=" + it.id + "&sz=w640"
+        : year + "/videos/thumbs/" + encodeURIComponent(it.n.replace(/\.mp4$/i, "") + ".webp");
 
       vcard.addEventListener("click", e => {
-        if (e.target.closest(".dl-btn")) { menuForVideo(year, f); return; }
-        lb.openVideo(srcPath);
+        if (e.target.closest(".dl-btn")) { menuForVideo(year, it); return; }
+        if (it.id) lb.openDriveVideo(it.id);
+        else lb.openVideo(year + "/videos/" + encodeURIComponent(it.n));
       });
       gal.appendChild(vcard);
     });
@@ -1077,11 +1189,11 @@
   function buildGroup(year){
     const head = document.getElementById("groupHead");
     const root = document.getElementById("groupRoot");
-    const files = arr(yearData(year).group).filter(f => IMG_EXT.test(f)).sort();
+    const files = itemsOf(year, "group");
     if (!files.length){ head.style.display="none"; root.style.display="none"; root.innerHTML=""; return; }
     head.style.display=""; root.style.display=""; root.innerHTML="";
-    files.forEach(f => {
-      const src = year + "/group/" + encodeURIComponent(f);
+    files.forEach(it => {
+      const src = imgSrc(year, "group", it, 1600);
       const item = document.createElement("div");
       item.className = "group-item";
       const b = document.createElement("button");
@@ -1094,7 +1206,7 @@
       if (canDownload(year)){
         item.insertAdjacentHTML("beforeend", DL_ICON);
         item.querySelector(".dl-btn").addEventListener("click", e => {
-          e.stopPropagation(); menuForPhoto(year, "group", f);
+          e.stopPropagation(); menuForPhoto(year, "group", it);
         });
       }
       root.appendChild(item);
@@ -1107,16 +1219,16 @@
   function buildTeams(year){
     const head = document.getElementById("teamsHead");
     const root = document.getElementById("teamsRoot");
-    const files = arr(yearData(year).students).filter(f => IMG_EXT.test(f));
+    const files = itemsOf(year, "students");
     if (!files.length){ head.style.display="none"; root.style.display="none"; root.innerHTML=""; return; }
     head.style.display=""; root.style.display=""; root.innerHTML="";
 
     /* 파일명 규칙: team-first-last.webp → 팀별로 묶기 */
     const groups = {};
-    files.forEach(f => {
-      const parts = f.replace(/\.[^.]+$/, "").split("-");
+    files.forEach(it => {
+      const parts = it.n.replace(/\.[^.]+$/, "").split("-");
       const team = cap(parts[0] || "team");
-      (groups[team] = groups[team] || []).push({ file: f, names: parts.slice(1) });
+      (groups[team] = groups[team] || []).push({ it: it, names: parts.slice(1) });
     });
 
     Object.keys(groups).sort().forEach(team => {
@@ -1131,13 +1243,14 @@
         .forEach(st => {
           const first = cap(st.names[0] || "");
           const full  = st.names.map(cap).join(" ");
-          const src   = year + "/students/" + encodeURIComponent(st.file);
+          const src   = imgSrc(year, "students", st.it, 400);
+          const big   = imgSrc(year, "students", st.it, 1600);
           const b = document.createElement("button");
           b.className = "stu-card";
           b.innerHTML = "<span class='stu-thumb'><img loading='lazy' decoding='async' alt='" + full + "'></span>"
                       + "<span class='stu-name'>" + first + "</span>";
           b.querySelector("img").src = src;
-          b.addEventListener("click", () => lb.openSolo(src, full + (isTA ? " · TA" : " · Team " + team)));
+          b.addEventListener("click", () => lb.openSolo(big, full + (isTA ? " · TA" : " · Team " + team)));
           grid.appendChild(b);
         });
       block.appendChild(grid);
@@ -1182,12 +1295,10 @@
     buildGroup(curYear);
   }
 
-  if (!Object.keys(FILES).length){
-    document.getElementById("days").innerHTML =
-      '<p class="video-empty">files.js not found — please run generate-files.ps1.</p>';
-  }
-  rebuild();
+  rebuild();                               /* 2025(repo) 즉시 표시, 2026은 Loading… */
+  loadAllDriveYears().then(rebuild);        /* Drive 목록 도착하면 다시 그림 */
 </script>
 
 </body>
 </html>
+
