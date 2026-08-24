@@ -688,51 +688,28 @@
              },
     "2026":  {
                  "day1":  [
-                              "jongbin-1.webp",
-                              "jongbin-2.webp",
-                              "jongbin-3.webp",
-                              "jongbin-4.webp",
-                              "jongbin-5.webp"
+
                           ],
                  "day2":  [
-                              "jongbin-1.webp",
-                              "jongbin-2.webp",
-                              "jongbin-3.webp",
-                              "jongbin-4.webp",
-                              "jongbin-5.webp"
+
                           ],
                  "day3":  [
-                              "jongbin-1.webp",
-                              "jongbin-2.webp",
-                              "jongbin-3.webp",
-                              "jongbin-4.webp",
-                              "jongbin-5.webp"
+                              "jongbin-1.webp"
                           ],
                  "day4":  [
-                              "jongbin-1.webp",
-                              "jongbin-2.webp",
-                              "jongbin-3.webp",
-                              "jongbin-4.webp",
-                              "jongbin-5.webp"
+
                           ],
                  "day5":  [
 
                           ],
                  "videos":  [
-                                "jongbin-1.mp4",
-                                "jongbin-2.mp4",
-                                "jongbin-3.mp4",
-                                "jongbin-4.mp4",
-                                "jongbin-5.mp4"
+                                "jongbin-1.mp4"
                             ],
                  "students":  [
-                                  "coconut-luca-feliciano.webp",
-                                  "coconut-lucas.webp",
-                                  "strawberry-elisha-ha.webp",
-                                  "strawberry-joseph-sargenti.webp"
+
                               ],
                  "group":  [
-                               "group-1.webp"
+
                            ]
              }
 };
