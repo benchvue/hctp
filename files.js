@@ -681,7 +681,10 @@
                                 "TaeKwonDo-Kpop_IMG_9060.mp4",
                                 "TaeKwonDo-Kpop_kpop.mp4",
                                 "TaeKwonDo-Kpop_kpop2.mp4"
-                            ]
+                            ],
+                 "group":  [
+                               "group-1.webp"
+                           ]
              },
     "2026":  {
                  "day1":  [
@@ -720,8 +723,7 @@
                                 "jongbin-2.mp4",
                                 "jongbin-3.mp4",
                                 "jongbin-4.mp4",
-                                "jongbin-5.mp4",
-                                "jongbin-6.mp4"
+                                "jongbin-5.mp4"
                             ],
                  "students":  [
                                   "coconut-luca-feliciano.webp",
