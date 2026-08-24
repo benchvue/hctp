@@ -694,7 +694,7 @@
 
                           ],
                  "day3":  [
-                              "jongbin-1.webp"
+
                           ],
                  "day4":  [
 
@@ -703,7 +703,7 @@
 
                           ],
                  "videos":  [
-                                "jongbin-1.mp4"
+
                             ],
                  "students":  [
 
