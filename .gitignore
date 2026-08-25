@@ -2,6 +2,7 @@
 
 origin/
 private/
+libwebp-1.4.0-windows-x64/
 
 generate-files.ps1
 dedupe-files.ps1
