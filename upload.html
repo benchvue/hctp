@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -465,6 +465,16 @@ if(/KAKAOTALK|NAVER\(inapp|Instagram|FBAN|FBAV|Line\/|DaumApps/i.test(navigator.
 
 /* ══════════════ Drive helpers ══════════════ */
 const authHeaders=()=>({Authorization:"Bearer "+accessToken});
+/* 뷰어(비로그인 API 키)가 볼 수 있도록 파일을 명시적으로 링크 공개로 설정.
+   폴더 상속에만 의존하면 편집자가 올린 파일이 공개 목록에서 빠지는 경우가 있음. */
+async function makePublic(fileId){
+  try{
+    await fetch("https://www.googleapis.com/drive/v3/files/"+fileId+"/permissions",
+      {method:"POST",
+       headers:Object.assign({"Content-Type":"application/json"},authHeaders()),
+       body:JSON.stringify({role:"reader",type:"anyone"})});
+  }catch(e){/* 이미 공개거나 권한 부족 — 무시 */}
+}
 const gFetch=(url,opt)=>fetch(url,Object.assign({},opt,{headers:Object.assign({},authHeaders(),(opt&&opt.headers)||{})}))
   .then(r=>{ if(!r.ok) return r.json().catch(()=>({})).then(d=>{
       const msg=(d.error&&d.error.message)||("HTTP "+r.status);
@@ -617,6 +627,19 @@ async function loadAll(){
       }
       document.getElementById("studentAdmin").style.display="block";
       document.getElementById("stuSection").style.display = isSuper ? "" : "none";
+      /* 기존 파일 공개 수리: 다른 선생님이 올린 파일이 뷰어에서 안 보이는 문제 해결 */
+      if(isSuper){
+        (async()=>{
+          const all=[];
+          driveFiles.forEach(x=>all.push(x.file.id));
+          try{(await listChildren(folderIds[CONFIG.studentsFolder],
+            " and mimeType!='application/vnd.google-apps.folder'")).forEach(f=>all.push(f.id));}catch(e){}
+          try{(await listChildren(folderIds[CONFIG.groupFolder],
+            " and mimeType!='application/vnd.google-apps.folder'")).forEach(f=>all.push(f.id));}catch(e){}
+          for(const id of all){await makePublic(id);}
+          console.log("public sweep done:",all.length,"files");
+        })();
+      }
       if(isSuper){
         await loadRoster();
         await loadStudents();
@@ -703,6 +726,7 @@ $("photoInput").addEventListener("change",async e=>{
       const up=await uploadBlob(name,w.mime,w.blob,folderIds[curDay],
         p=>$("photoStatus").textContent="Uploading "+name+" … "+Math.round(p*100)+"%");
 
+      makePublic(up.id);
       /* 원본(고해상도)도 같은 이름으로 함께 업로드 — 뷰어의 다운로드용 */
       let origId=null, origName=null;
       const origExt=(f.name.split(".").pop()||"jpg").toLowerCase().replace("jpeg","jpg");
@@ -712,6 +736,7 @@ $("photoInput").addEventListener("change",async e=>{
         const upO=await uploadBlob(origName,f.type||"application/octet-stream",f,folderIds[curDay],
           p=>$("photoStatus").textContent="Uploading original "+origName+" … "+Math.round(p*100)+"%");
         origId=upO.id;
+        makePublic(origId);
       }
       await updateDb(d=>d.uploads.push({fileId:up.id,name,type:"photo",folder:curDay,email:me.email,ts:Date.now(),origId,origName}));
       done++;
@@ -739,6 +764,7 @@ $("videoInput").addEventListener("change",async e=>{
       $("videoStatus").textContent="Uploading "+name+" …";
       const up=await uploadBlob(name,f.type||"video/mp4",f,folderIds[CONFIG.videoFolder],
         p=>$("videoStatus").textContent="Uploading "+name+" … "+Math.round(p*100)+"%");
+      makePublic(up.id);
       await updateDb(d=>d.uploads.push({fileId:up.id,name,type:"video",folder:CONFIG.videoFolder,email:me.email,ts:Date.now()}));
       done++;
     }catch(err){toast("⚠ "+f.name+": "+err.message);}
@@ -1239,14 +1265,16 @@ $("cropUpload").addEventListener("click",async()=>{
       if(n==null)throw new Error("단체 사진은 최대 "+CONFIG.groupMax+"장입니다 — 기존 사진을 삭제 후 올려주세요");
       const fname="group-"+n+".webp";
       $("stuStatus").textContent=fname+" 업로드 중 …";
-      await uploadBlob(fname,blob.type,blob,folderIds[CONFIG.groupFolder]);
+      const gUp=await uploadBlob(fname,blob.type,blob,folderIds[CONFIG.groupFolder]);
+      makePublic(gUp.id);
       /* 원본(자르기 전 전체 사진)도 함께 업로드 — 뷰어 다운로드용 */
       const oExt=(stuSrcFile.file.name.split(".").pop()||"jpg").toLowerCase().replace("jpeg","jpg");
       if(oExt!=="webp"){
         const oName="group-"+n+"."+oExt;
         $("stuStatus").textContent="원본 "+oName+" 업로드 중 …";
-        await uploadBlob(oName,stuSrcFile.file.type||"application/octet-stream",
+        const gOr=await uploadBlob(oName,stuSrcFile.file.type||"application/octet-stream",
           stuSrcFile.file,folderIds[CONFIG.groupFolder]);
+        makePublic(gOr.id);
       }
       await loadGroup();renderGroup();
       toast("단체 사진 추가 완료 ✓ (원본 포함)");
@@ -1261,7 +1289,8 @@ $("cropUpload").addEventListener("click",async()=>{
           {method:"PATCH",headers:Object.assign({"Content-Type":blob.type},authHeaders()),body:blob});
         if(!r.ok)throw new Error("교체 실패 ("+r.status+")");
       }else{
-        await uploadBlob(fname,blob.type,blob,folderIds[CONFIG.studentsFolder]);
+        const sUp=await uploadBlob(fname,blob.type,blob,folderIds[CONFIG.studentsFolder]);
+        makePublic(sUp.id);
       }
       await loadStudents();renderStudents();
       toast(full+" 사진 "+(ex?"교체":"등록")+" 완료 ✓");
@@ -1442,4 +1471,3 @@ $("lb").addEventListener("click",e=>{if(e.target===$("lb"))$("lb").classList.rem
 </script>
 </body>
 </html>
-
