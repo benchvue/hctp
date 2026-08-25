@@ -1297,6 +1297,15 @@
 
   rebuild();                               /* 2025(repo) 즉시 표시, 2026은 Loading… */
   loadAllDriveYears().then(rebuild);        /* Drive 목록 도착하면 다시 그림 */
+
+  /* ── 방문자 카운터 (Apps Script) — 세션당 1회 기록 ── */
+  const STATS_URL = "https://script.google.com/macros/s/AKfycbySEQz0u_0F777ouQKlomTV_XveEz6NIPU6i1kO8i5OgKrURyIaWiK-AbLpx_xT6aA5NQ/exec";
+  try{
+    if (STATS_URL.indexOf("PASTE_") !== 0 && !sessionStorage.getItem("hctp_hit")){
+      sessionStorage.setItem("hctp_hit", "1");
+      fetch(STATS_URL, { mode: "no-cors" }).catch(function(){});
+    }
+  }catch(e){}
 </script>
 
 </body>
