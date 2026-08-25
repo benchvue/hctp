@@ -258,6 +258,7 @@
   <!-- ══════════ Feedback · 선생님 전달사항 (Drive db) ══════════ -->
   <h2 class="sec">Feedback <small id="fbSub">· 선생님 전달사항</small></h2>
   <div class="fb-card card">
+    <div id="fbTabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
     <div class="fb-actions" id="fbActions" style="display:none">
       <button class="mini" id="fbEditBtn">✎ 편집</button>
     </div>
@@ -380,6 +381,7 @@ const CONFIG = {
   groupMax: 5,
   rosterFileName: "hctp-2026-roster.json",
   feedbackFileName: "hctp-2026-feedback.json",
+  campStart: "2026-08-24",        /* day1 = 월요일. DAY 버튼 기본값·전달사항 날짜 탭에 사용 */
   teamNames: ["Coconut","Strawberry","TA"],   /* TA = 세 번째 그룹 (뷰어에선 "TAs"로 표시) */
 
   /* Quotas: photoMax = PER DAY (number = same every day,
@@ -406,7 +408,14 @@ let accessToken=null, myEmail="", me=null, isSuper=false, canDeleteAll=false, to
 let folderIds={};            /* name -> id (day1..day5, video, db) */
 let dbFileId=null;
 let db={uploads:[]};         /* {fileId,name,type:'photo'|'video',folder,email,ts} */
-let curDay="day1";
+let curDay=(()=>{                 /* 오늘 날짜에 맞는 DAY가 기본 선택됨 */
+  try{
+    const st=new Date(CONFIG.campStart+"T00:00:00");
+    const t=new Date();t.setHours(0,0,0,0);
+    const i=Math.round((t-st)/86400000);
+    return "day"+(Math.min(4,Math.max(0,i))+1);
+  }catch(e){return "day1";}
+})();
 const $=id=>document.getElementById(id);
 const toast=m=>{const t=$("toast");t.textContent=m;t.classList.add("show");
   clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),/fail|error|⚠|denied|full/i.test(m)?7000:3000);};
@@ -1312,7 +1321,7 @@ $("cropUpload").addEventListener("click",async()=>{
 });
 
 /* ══════════════ Visitors (Apps Script 카운터) ══════════════ */
-const STATS_URL = "https://script.google.com/macros/s/AKfycbySEQz0u_0F777ouQKlomTV_XveEz6NIPU6i1kO8i5OgKrURyIaWiK-AbLpx_xT6aA5NQ/exec";
+const STATS_URL = "PASTE_STATS_URL_HERE";
 
 async function loadVisitors(){
   const el=$("vsCard");
@@ -1376,8 +1385,17 @@ function vsChart(title,labels,vals,showNums){
 }
 
 /* ══════════════ Feedback (Drive db, 시간표와 같은 방식) ══════════════ */
-const DEFAULT_FEEDBACK = { updated: 0, by: "",
-  text: [
+/* 날짜별 전달사항 — 탭 라벨은 날짜(8/24, 8/25 …) */
+const CAMP_DATES=(()=>{const a=[],st=new Date(CONFIG.campStart+"T00:00:00");
+  for(let i=0;i<5;i++){const d=new Date(st);d.setDate(d.getDate()+i);a.push(d);}return a;})();
+const isoOf=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const fbLabel=d=>(d.getMonth()+1)+"/"+d.getDate();
+const todayCampIdx=()=>{const t=new Date();t.setHours(0,0,0,0);
+  const st=new Date(CONFIG.campStart+"T00:00:00");
+  return Math.min(4,Math.max(0,Math.round((t-st)/86400000)));};
+
+const DEFAULT_FEEDBACK_DAYS={
+"2026-08-24":[
 "## 1. 출석 현황 (8/24 · 결석 5명)",
 "* Alexander Suarez",
 "* Alex Dushane",
@@ -1401,9 +1419,27 @@ const DEFAULT_FEEDBACK = { updated: 0, by: "",
 "* 보호자가 도착한 학생부터 **한 명씩 안전하게 귀가**할 수 있도록 안내해 주세요.",
 "* 하원 시간에 체육관에서 공놀이는 원활한 하원 진행에 방해가 되므로 삼가도록 지도해 주세요.",
 "* 기다리는 동안에는 **젠가, 공기놀이, 카드게임** 등 차분한 놀이를 하도록 안내해 주세요."
-  ].join("\n") };
+].join("\n"),
+"2026-08-25":[
+"## 1. 출석 현황 (8/25 · 결석 3명)",
+"* Alexander Suarez",
+"* Alex Dushane",
+"* Andrra Velillari",
+"",
+"## 2. 조퇴 / 외출",
+"* **Sara** — 11:30 AM 조퇴. 티라미슈를 못 찾아 아쉬워하며 귀가 — **냉장고에 보관 중**입니다.",
+"* **Mattia** — 12:50 PM 외출, 30분 뒤 복귀.",
+"* **Benjamin** — 12:00 PM 외출, 1시간 뒤 복귀.",
+"",
+"## 3. 학생 돌봄 및 점심시간",
+"* Morning Free Play부터 점심까지 **소외되는 아이 없이** 자연스럽게 어울렸고, 채소도 맛있게 잘 먹었습니다. 아이들이 하루하루 조금씩 가까워지고 있어요.",
+"* Mattia 아버님 말씀: 캠프가 너무 좋아 일찍 가는 걸 무척 아쉬워했다고 — 실제로 30분 뒤 캠프로 돌아왔습니다.",
+"* 쿠킹 클래스에서 만든 **김밥과 티라미슈**를 꼭 집에 가져가겠다고 몇 번씩 챙기는 모습이 참 귀여웠습니다.",
+"* 짧은 시간이지만 서로에게 좋은 에너지가 되어 주며 행복한 추억을 만들어 가면 좋겠습니다."
+].join("\n")
+};
 
-let feedback=null, fbFileId=null;
+let feedback={days:{}}, fbFileId=null, fbSel=isoOf(CAMP_DATES[todayCampIdx()]);
 const isFbAdmin=()=>isSuper||CONFIG.groupAdmins.some(e=>e.toLowerCase()===myEmail);
 
 /* 아주 작은 마크다운 렌더러: ## 제목 / * 항목 / **굵게** */
@@ -1427,34 +1463,67 @@ function fbRender(text){
     }
   });
   if(inList)html+="</ul>";
-  return html||"<p class='empty-note'>내용이 없습니다.</p>";
+  return html||"<p class='empty-note'>이 날짜의 전달사항이 아직 없습니다.</p>";
 }
+
 function renderFeedback(){
-  $("fbView").innerHTML=fbRender(feedback.text);
-  $("fbMeta").textContent=feedback.updated
-    ? "마지막 수정: "+new Date(feedback.updated).toLocaleString()+(feedback.by?" · "+feedback.by:"")
+  /* 날짜 탭 */
+  const tabs=$("fbTabs");tabs.innerHTML="";
+  CAMP_DATES.forEach(d=>{
+    const k=isoOf(d);
+    const b=document.createElement("button");
+    b.type="button";b.className="daypill"+(k===fbSel?" on":"");
+    b.textContent=fbLabel(d)+((feedback.days[k]&&feedback.days[k].text)?"":" ·");
+    b.addEventListener("click",()=>{fbSel=k;
+      $("fbEditor").style.display="none";$("fbView").style.display="block";
+      renderFeedback();});
+    tabs.appendChild(b);
+  });
+  const day=feedback.days[fbSel]||{};
+  $("fbView").innerHTML=fbRender(day.text);
+  $("fbMeta").textContent=day.updated
+    ? "마지막 수정: "+new Date(day.updated).toLocaleString()+(day.by?" · "+day.by:"")
     : "";
   $("fbActions").style.display=isFbAdmin()?"flex":"none";
 }
 async function loadFeedback(dbKids){
   const f=dbKids.find(x=>x.name===CONFIG.feedbackFileName);
+  let changed=false;
   if(f){
     fbFileId=f.id;
     try{feedback=await gFetch("https://www.googleapis.com/drive/v3/files/"+f.id+"?alt=media");}
     catch(e){feedback=null;}
-    if(!feedback||typeof feedback.text!=="string")feedback=Object.assign({},DEFAULT_FEEDBACK);
-  }else{
-    feedback=Object.assign({},DEFAULT_FEEDBACK);
+  }
+  if(feedback&&typeof feedback.text==="string"){   /* 구버전(단일 글) → day1로 이관 */
+    feedback={days:{[CONFIG.campStart]:{text:feedback.text,updated:feedback.updated||0,by:feedback.by||""}}};
+    changed=true;
+  }
+  if(!feedback||typeof feedback!=="object")feedback={days:{}};
+  if(!feedback.days)feedback.days={};
+  Object.keys(DEFAULT_FEEDBACK_DAYS).forEach(k=>{   /* 기본 내용 시딩(비어있는 날짜만) */
+    if(!feedback.days[k]||!feedback.days[k].text){
+      feedback.days[k]={text:DEFAULT_FEEDBACK_DAYS[k],updated:0,by:""};changed=true;
+    }
+  });
+  if(!fbFileId){
     try{
       const created=await uploadBlob(CONFIG.feedbackFileName,"application/json",
         new Blob([JSON.stringify(feedback)]),folderIds[CONFIG.dbFolder]);
-      fbFileId=created.id;
+      fbFileId=created.id;changed=false;
     }catch(e){}
+  }else if(changed){
+    try{await saveFeedbackFile();}catch(e){}
   }
   renderFeedback();
 }
+async function saveFeedbackFile(){
+  const r=await fetch("https://www.googleapis.com/upload/drive/v3/files/"+fbFileId+"?uploadType=media",
+    {method:"PATCH",headers:Object.assign({"Content-Type":"application/json"},authHeaders()),
+     body:JSON.stringify(feedback)});
+  if(!r.ok)throw new Error("저장 실패 ("+r.status+")");
+}
 $("fbEditBtn").addEventListener("click",()=>{
-  $("fbText").value=feedback.text;
+  $("fbText").value=(feedback.days[fbSel]&&feedback.days[fbSel].text)||"";
   $("fbView").style.display="none";$("fbEditor").style.display="block";
 });
 $("fbCancelBtn").addEventListener("click",()=>{
@@ -1463,13 +1532,8 @@ $("fbCancelBtn").addEventListener("click",()=>{
 $("fbSaveBtn").addEventListener("click",async()=>{
   const btn=$("fbSaveBtn");btn.disabled=true;
   try{
-    feedback={text:$("fbText").value,updated:Date.now(),by:myEmail};
-    if(fbFileId){
-      const r=await fetch("https://www.googleapis.com/upload/drive/v3/files/"+fbFileId+"?uploadType=media",
-        {method:"PATCH",headers:Object.assign({"Content-Type":"application/json"},authHeaders()),
-         body:JSON.stringify(feedback)});
-      if(!r.ok)throw new Error("저장 실패 ("+r.status+")");
-    }
+    feedback.days[fbSel]={text:$("fbText").value,updated:Date.now(),by:myEmail};
+    await saveFeedbackFile();
     $("fbEditor").style.display="none";$("fbView").style.display="block";
     renderFeedback();toast("전달사항 저장 완료 ✓ — 모든 선생님에게 반영됩니다");
   }catch(e){toast("⚠ "+e.message);}
