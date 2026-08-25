@@ -368,6 +368,9 @@ const CONFIG = {
   /* 단체 사진을 관리(추가/삭제)할 수 있는 계정 — super admin은 자동 포함 */
   groupAdmins: ["mihekang@gmail.com"],
 
+  /* 모든 선생님의 사진/비디오를 보고 삭제할 수 있는 계정 — super admin은 자동 포함 */
+  deleteAdmins: ["hyc333@gmail.com"],
+
   /* 학생/단체 사진 (super admin 전용)
      - 학생 사진: Drive "students" 폴더, 파일명 팀-이름.webp
      - 학생 명단: Drive db/hctp-2026-roster.json — 업로드 페이지에서 직접 추가/제거
@@ -399,7 +402,7 @@ const CONFIG = {
 };
 
 /* ══════════════ state ══════════════ */
-let accessToken=null, myEmail="", me=null, isSuper=false, tokenClient=null;
+let accessToken=null, myEmail="", me=null, isSuper=false, canDeleteAll=false, tokenClient=null;
 let folderIds={};            /* name -> id (day1..day5, video, db) */
 let dbFileId=null;
 let db={uploads:[]};         /* {fileId,name,type:'photo'|'video',folder,email,ts} */
@@ -435,6 +438,7 @@ const initAuth=()=>{
         me=teacherByEmail(myEmail);
         if(!me){accessToken=null;$("deniedMsg").style.display="block";return;}
         isSuper=(myEmail===CONFIG.superAdmin.toLowerCase());
+        canDeleteAll=isSuper||CONFIG.deleteAdmins.some(e=>e.toLowerCase()===myEmail);
         $("lockScreen").style.display="none";$("panel").style.display="block";
         $("whoAmI").innerHTML="Signed in: <b>"+me.name+"</b> · "+myEmail+(isSuper?" · <b>SUPER ADMIN</b>":"");
         loadAll();
@@ -783,7 +787,7 @@ $("videoInput").addEventListener("change",async e=>{
 
 /* ══════════════ delete ══════════════ */
 async function removeUpload(u){
-  if(!isSuper&&u.email.toLowerCase()!==myEmail)return toast("You can only delete your own files");
+  if(!canDeleteAll&&u.email.toLowerCase()!==myEmail)return toast("You can only delete your own files");
   if(!confirm("Delete "+u.name+" ("+u.folder+") ?"))return;
   try{
     await deleteDriveFile(u.fileId,folderIds[u.folder]);
@@ -818,7 +822,8 @@ function renderAll(){
      +"<br>Your videos — <b"+(v>=me.videoMax?" class='warn'":"")+">"+v+" / "+me.videoMax+"</b>";
   }
   if(me.note)q+="<br><span style='font-size:12px;color:var(--muted)'>"+me.note+"</span>";
-  if(isSuper)q+="<br><span style='font-size:12px;color:var(--muted)'>Super admin — you can see and delete every file below.</span>";
+  if(canDeleteAll)q+="<br><span style='font-size:12px;color:var(--muted)'>"+
+    (isSuper?"Super admin":"Delete admin")+" — you can see and delete every file below.</span>";
   $("quotaBox").innerHTML=q;
 
   const canUp=canUpload(me);
@@ -864,9 +869,9 @@ function renderAll(){
   $("teacherTable").innerHTML=rows;
 
   /* which uploads do I see in the grids? */
-  const visible=isSuper?db.uploads:db.uploads.filter(u=>u.email.toLowerCase()===myEmail);
-  $("filesTitle").textContent=isSuper?"All Photos":"My Photos";
-  $("videosTitle").innerHTML=(isSuper?"All Videos":"My Videos")+" <small>· first uploaded, first shown</small>";
+  const visible=canDeleteAll?db.uploads:db.uploads.filter(u=>u.email.toLowerCase()===myEmail);
+  $("filesTitle").textContent=canDeleteAll?"All Photos":"My Photos";
+  $("videosTitle").innerHTML=(canDeleteAll?"All Videos":"My Videos")+" <small>· first uploaded, first shown</small>";
 
   /* photos grouped by day */
   let ph="";
@@ -902,8 +907,8 @@ function renderAll(){
 
 function cardHtml(u){
   const t=teacherByEmail(u.email);
-  const owner=(isSuper&&t)?"<span class='owner'>"+t.first+"</span>":"";
-  const canDel=isSuper||u.email.toLowerCase()===myEmail;
+  const owner=(canDeleteAll&&t)?"<span class='owner'>"+t.first+"</span>":"";
+  const canDel=canDeleteAll||u.email.toLowerCase()===myEmail;
   return "<div class='pcard' data-fid='"+u.fileId+"'>"
     +"<div class='pimg"+(u.type==="video"?" vid":"")+"'><img alt='"+u.name+"'>"+owner+"</div>"
     +"<div class='pname'>"+u.name+"</div>"

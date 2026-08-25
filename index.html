@@ -664,6 +664,7 @@
      window.HCTP_FILES = { "2025": { day1:[...], ..., videos:[...] }, "2026": {...} } */
   const FILES = window.HCTP_FILES || {};   /* 2025 archive (repo files) */
   const DL_FROM_YEAR = 2026;               /* 2025는 원본이 없어 다운로드 버튼 없음 */
+  const SHOW_NAMES = false;                /* 학생 이름 표시 여부 — true로 바꾸면 first name 복원 */
 
   /* ── Google Drive 직접 스트리밍 (2026+) ──
      repo에 미디어를 넣지 않고, 폴더를 API 키로 실시간 조회해서
@@ -1281,16 +1282,19 @@
       groups[team]
         .sort((a,b) => (a.names[0]||"") < (b.names[0]||"") ? -1 : 1)
         .forEach(st => {
+          /* 개인정보 보호: 이름은 화면에 표시하지 않음 (SHOW_NAMES로 복원 가능).
+             파일명·db의 이름 정보는 그대로 유지됨 */
           const first = cap(st.names[0] || "");
-          const full  = st.names.map(cap).join(" ");
           const src   = imgSrc(year, "students", st.it, 400);
           const big   = imgSrc(year, "students", st.it, 1600);
           const b = document.createElement("button");
           b.className = "stu-card";
-          b.innerHTML = "<span class='stu-thumb'><img loading='lazy' decoding='async' alt='" + full + "'></span>"
-                      + "<span class='stu-name'>" + first + "</span>";
+          b.innerHTML = "<span class='stu-thumb'><img loading='lazy' decoding='async' alt='camper photo'></span>"
+                      + (SHOW_NAMES ? "<span class='stu-name'>" + first + "</span>" : "");
           b.querySelector("img").src = src;
-          b.addEventListener("click", () => lb.openSolo(big, full + (isTA ? " · TA" : " · Team " + team)));
+          b.addEventListener("click", () => lb.openSolo(big,
+            SHOW_NAMES ? (first + (isTA ? " · TA" : " · Team " + team))
+                       : (isTA ? "TA" : "Team " + team)));
           grid.appendChild(b);
         });
       block.appendChild(grid);
