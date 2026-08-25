@@ -482,6 +482,11 @@
     box-shadow:0 30px 80px -20px rgba(0,0,0,.9);
   }
   .lightbox iframe.active{display:block}
+  .lightbox #lbExt{display:none;margin-top:14px;font-size:13px;letter-spacing:.05em;
+    color:#dfc180;text-decoration:none;border:1px solid rgba(223,193,128,.5);
+    border-radius:999px;padding:9px 18px;background:rgba(19,16,17,.55)}
+  .lightbox #lbExt.active{display:inline-block}
+  .lightbox #lbExt:hover{background:#dfc180;color:#131011}
   .lightbox video, .lightbox img{
     max-width: 100%;
     max-height: 92vh;
@@ -644,6 +649,7 @@
   </button>
   <video id="lbVideo" controls playsinline></video>
   <iframe id="lbFrame" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>
+  <a id="lbExt" target="_blank" rel="noopener">Video not playing? &nbsp;Open in Google Drive ↗</a>
   <img id="lbImg" alt="Enlarged camp photo">
   <p class="lb-caption" id="lbCaption"></p>
 </div>
@@ -987,6 +993,9 @@
       lightbox.classList.add("open");
       lbFrame.src = "https://drive.google.com/file/d/" + fileId + "/preview";
       lbFrame.classList.add("active");
+      const ext = document.getElementById("lbExt");
+      ext.href = "https://drive.google.com/file/d/" + fileId + "/view";
+      ext.classList.add("active");
     },
     openVideo(src){
       this.imgCtrl = null;
@@ -1010,6 +1019,7 @@
       lbVideo.classList.remove("active");
       lbFrame.removeAttribute("src");      /* Drive 플레이어 정지 */
       lbFrame.classList.remove("active");
+      document.getElementById("lbExt").classList.remove("active");
       lbImg.classList.remove("active");
       lbImg.removeAttribute("src");
       bgm.resumeAfterVideo();              /* 끊겼던 배경음악 이어서 재생 */
