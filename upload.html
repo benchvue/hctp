@@ -615,6 +615,22 @@ async function loadAll(){
 
     renderAll();
 
+    /* 공개 수리 스윕: 모든 미디어 파일에 링크-공개 권한 부여 시도 (세션당 1회).
+       파일 소유자는 항상 성공 → 각 선생님이 로그인하면 본인 파일은 확실히 공개됨. */
+    if(!sessionStorage.getItem("hctp_sweep")){
+      sessionStorage.setItem("hctp_sweep","1");
+      (async()=>{
+        const all=driveFiles.map(x=>x.file.id);
+        for(const fn of [CONFIG.studentsFolder,CONFIG.groupFolder]){
+          if(!folderIds[fn])continue;
+          try{(await listChildren(folderIds[fn],
+            " and mimeType!='application/vnd.google-apps.folder'")).forEach(f=>all.push(f.id));}catch(e){}
+        }
+        for(const id of all){await makePublic(id);}
+        console.log("public sweep done:",all.length,"files");
+      })();
+    }
+
     /* 사진 관리 패널 — 단체 사진: super + groupAdmins / 학생 사진: super 전용 */
     const isGroupAdmin = isSuper ||
       CONFIG.groupAdmins.some(e=>e.toLowerCase()===myEmail);
@@ -627,19 +643,6 @@ async function loadAll(){
       }
       document.getElementById("studentAdmin").style.display="block";
       document.getElementById("stuSection").style.display = isSuper ? "" : "none";
-      /* 기존 파일 공개 수리: 다른 선생님이 올린 파일이 뷰어에서 안 보이는 문제 해결 */
-      if(isSuper){
-        (async()=>{
-          const all=[];
-          driveFiles.forEach(x=>all.push(x.file.id));
-          try{(await listChildren(folderIds[CONFIG.studentsFolder],
-            " and mimeType!='application/vnd.google-apps.folder'")).forEach(f=>all.push(f.id));}catch(e){}
-          try{(await listChildren(folderIds[CONFIG.groupFolder],
-            " and mimeType!='application/vnd.google-apps.folder'")).forEach(f=>all.push(f.id));}catch(e){}
-          for(const id of all){await makePublic(id);}
-          console.log("public sweep done:",all.length,"files");
-        })();
-      }
       if(isSuper){
         await loadRoster();
         await loadStudents();
