@@ -674,7 +674,7 @@
     const key = DRIVE.apiKey;
     if (!key || key.indexOf("PASTE_") === 0) return;
     const list = q => fetch("https://www.googleapis.com/drive/v3/files?q=" + encodeURIComponent(q)
-        + "&fields=" + encodeURIComponent("files(id,name,mimeType,createdTime)")
+        + "&fields=" + encodeURIComponent("files(id,name,mimeType,createdTime,size)")
         + "&pageSize=1000&key=" + key)
       .then(r => r.json()).then(d => d.files || []);
     const kids = await list("'" + rootId + "' in parents and trashed=false and mimeType='application/vnd.google-apps.folder'");
@@ -685,13 +685,33 @@
     for (const d of ["day1","day2","day3","day4","day5","group"]){
       const id = fid(d); if (!id) continue;
       const fl = await list("'" + id + "' in parents and trashed=false");
-      fl.filter(f => WEBP.test(f.name)).sort((a,b) => a.name < b.name ? -1 : 1)
-        .forEach(f => y[d].push({ n: f.name, id: f.id }));
-      /* webp ↔ 같은 이름의 원본(jpg 등) 매핑 → 다운로드 메뉴에서 사용 */
-      fl.filter(f => ORIGX.test(f.name)).forEach(o => {
-        const base = o.name.replace(/\.[^.]+$/, "");
-        const w = fl.find(f => WEBP.test(f.name) && f.name.replace(/\.webp$/i, "") === base);
-        if (w) y.orig[d + "/" + w.name] = { id: o.id, n: o.name };
+      /* 같은 기본이름(base)끼리 묶어서 표시본/원본을 정한다.
+         - webp가 있으면: webp = 표시본, 같은 이름의 jpg 등 = 원본
+         - webp가 없으면(아이폰 업로드 등 jpg만 2개): 크기가 작은 쪽 = 표시본(리사이즈),
+           큰 쪽 = 원본. 하나뿐이면 그것을 표시본으로. */
+      const byBase = {};
+      fl.forEach(f => {
+        if (!WEBP.test(f.name) && !ORIGX.test(f.name)) return;
+        const b = f.name.replace(/\.[^.]+$/, "");
+        (byBase[b] = byBase[b] || []).push(f);
+      });
+      Object.keys(byBase).sort().forEach(b => {
+        const g = byBase[b];
+        const webp = g.find(f => WEBP.test(f.name));
+        let disp = null, orig = null;
+        if (webp){
+          disp = webp;
+          orig = g.filter(f => !WEBP.test(f.name))
+                  .sort((a,b2) => Number(b2.size||0) - Number(a.size||0))[0] || null;
+        } else {
+          const imgs = g.filter(f => /\.(jpe?g|png)$/i.test(f.name))
+                        .sort((a,b2) => Number(a.size||0) - Number(b2.size||0));
+          if (!imgs.length) return;
+          disp = imgs[0];
+          orig = imgs.length > 1 ? imgs[imgs.length - 1] : null;
+        }
+        y[d].push({ n: disp.name, id: disp.id });
+        if (orig) y.orig[d + "/" + disp.name] = { id: orig.id, n: orig.name };
       });
     }
     const vid = fid("video");

@@ -701,7 +701,10 @@ async function toWebp(file){
   if(blob&&blob.type==="image/webp")return{blob,ext:"webp",mime:"image/webp"};
   const jpg=await new Promise(r=>c.toBlob(r,"image/jpeg",0.85));
   if(!jpg)throw new Error("image conversion failed");
-  return{blob:jpg,ext:"jpg",mime:"image/jpeg"};
+  /* Safari(아이폰)는 webp 인코딩 미지원 → JPEG로 만들되 이름은 .webp 유지.
+     (Drive/lh3는 내용으로 판별하므로 정상 표시되고, 뷰어의 webp 목록 규칙과
+      원본 짝맞춤(같은 이름 .jpg)이 모든 기기에서 동일하게 동작함) */
+  return{blob:jpg,ext:"webp",mime:"image/jpeg"};
 }
 
 /* ══════════════ uploads ══════════════ */
