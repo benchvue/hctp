@@ -1025,7 +1025,7 @@
 
   function createDayCard(year, key){
     const label = DAY_LABELS[key] || key;
-    const files = shuffle(itemsOf(year, key).slice());
+    let files = shuffle(itemsOf(year, key).slice());   /* 접속마다 새 순서 */
 
     const card  = document.createElement("section");
     card.className = "day-card";
@@ -1066,7 +1066,17 @@
     function show(i){
       if (loading) return;
       loading = true;
-      const target = ((i % files.length) + files.length) % files.length;
+      /* 한 바퀴(모든 사진)를 다 보면 새로 셔플해서 다른 순서로 다시 시작.
+         직전에 본 사진이 새 순서의 첫 장으로 반복되지 않게 함. */
+      let target;
+      if (i >= files.length && files.length > 1){
+        const last = files[idx];
+        let guard = 8;
+        do { files = shuffle(files); } while (files[0] === last && --guard > 0);
+        target = 0;
+      } else {
+        target = ((i % files.length) + files.length) % files.length;
+      }
       const pre = new Image();
       pre.onload = () => {
         idx = target;
@@ -1299,7 +1309,7 @@
   loadAllDriveYears().then(rebuild);        /* Drive 목록 도착하면 다시 그림 */
 
   /* ── 방문자 카운터 (Apps Script) — 세션당 1회 기록 ── */
-  const STATS_URL = "https://script.google.com/macros/s/AKfycbySEQz0u_0F777ouQKlomTV_XveEz6NIPU6i1kO8i5OgKrURyIaWiK-AbLpx_xT6aA5NQ/exec";
+  const STATS_URL = "PASTE_STATS_URL_HERE";
   try{
     if (STATS_URL.indexOf("PASTE_") !== 0 && !sessionStorage.getItem("hctp_hit")){
       sessionStorage.setItem("hctp_hit", "1");
@@ -1310,5 +1320,3 @@
 
 </body>
 </html>
-
-
