@@ -697,6 +697,8 @@ const countVideos=(email)=>db.uploads.filter(u=>
 
 /* per-day photo limit: number = same every day, object = per-day */
 const photoLimit=(t,day)=>typeof t.photoMax==="object"?(t.photoMax[day]||0):t.photoMax;
+const weekLimit=t=>CONFIG.photoFolders.reduce((a,d)=>a+photoLimit(t,d),0);
+const weekCount=email=>db.uploads.filter(u=>u.type==="photo"&&u.email.toLowerCase()===email.toLowerCase()).length;
 const canUpload=(t)=>CONFIG.photoFolders.some(d=>photoLimit(t,d)>0);
 
 /* next free number: photos numbered per day, videos numbered overall (fills gaps) */
@@ -724,6 +726,52 @@ const loadImage=file=>new Promise((res,rej)=>{
   img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error("Cannot read this image on this device — please convert HEIC to JPG first"));};
   img.src=url;
 });
+/* 사진의 촬영 날짜 → 캠프 day 매핑 (JPEG EXIF DateTimeOriginal, 실패 시 파일 수정시각) */
+async function photoDateOf(f){
+  try{
+    if(/\.jpe?g$/i.test(f.name)||f.type==="image/jpeg"){
+      const dv=new DataView(await f.slice(0,131072).arrayBuffer());
+      if(dv.getUint16(0)===0xFFD8){
+        let o=2;
+        while(o+4<dv.byteLength){
+          const marker=dv.getUint16(o), len=dv.getUint16(o+2);
+          if(marker===0xFFE1&&dv.getUint32(o+4)===0x45786966){   /* APP1 "Exif" */
+            const t=o+10, little=dv.getUint16(t)===0x4949;
+            const g16=x=>dv.getUint16(x,little), g32=x=>dv.getUint32(x,little);
+            const ascii=(off,cnt)=>{let r="";for(let i=0;i<cnt-1;i++)r+=String.fromCharCode(dv.getUint8(off+i));return r;};
+            let d9003="", d0132="", exifIfd=0;
+            const scan=ifd=>{
+              const c=g16(ifd);
+              for(let i=0;i<c;i++){
+                const e=ifd+2+i*12, tag=g16(e);
+                if(tag===0x8769)exifIfd=t+g32(e+8);
+                if(tag===0x9003||tag===0x0132){
+                  const cnt=g32(e+4), off=cnt>4?t+g32(e+8):e+8;
+                  const v=ascii(off,cnt);
+                  if(tag===0x9003)d9003=v;else d0132=v;
+                }
+              }};
+            scan(t+g32(t+4));
+            if(exifIfd)scan(exifIfd);
+            const m=/^(\d{4}):(\d{2}):(\d{2})/.exec(d9003||d0132);
+            if(m)return new Date(+m[1],+m[2]-1,+m[3]);
+          }
+          if((marker&0xFF00)!==0xFF00)break;
+          o+=2+len;
+        }
+      }
+    }
+  }catch(e){}
+  return f.lastModified?new Date(f.lastModified):null;
+}
+function campDayOf(date){
+  if(!date)return null;
+  const st=new Date(CONFIG.campStart+"T00:00:00");
+  const d=new Date(date);d.setHours(0,0,0,0);
+  const i=Math.round((d-st)/86400000);
+  return (i>=0&&i<=4)?("day"+(i+1)):null;
+}
+
 async function toWebp(file){
   const img=await loadImage(file);
   const sc=Math.min(1,CONFIG.webpMaxDim/Math.max(img.naturalWidth,img.naturalHeight));
@@ -748,21 +796,29 @@ $("photoInput").addEventListener("change",async e=>{
   const files=[...e.target.files];e.target.value="";
   if(!files.length)return;
   $("photoUpBox").classList.add("busy");
-  let done=0;
+  let done=0, routed={}, borrowed=false;
   for(const f of files){
     try{
       if(!isImageFile(f)){toast("⚠ "+f.name+" is not a photo — videos go in Upload Videos below");continue;}
       db=await readDb();                                   /* fresh count every file */
-      const lim=photoLimit(me,curDay);
-      if(countPhotosDay(me.email,curDay)>=lim){
-        toast("⚠ "+curDay+" is full ("+lim+" photos) — other days are still open");break;}
-      const n=nextPhotoNumber(me,curDay);
-      if(n==null){toast("⚠ "+curDay+" is full ("+lim+" photos)");break;}
+
+      /* 주간 공유 쿼터: 하루가 꽉 차면 다른 날 몫에서 사용 */
+      if(weekCount(me.email)>=weekLimit(me)){
+        toast("⚠ Weekly photo quota full ("+weekLimit(me)+" for the week)");break;}
+
+      /* 사진의 촬영 날짜로 day 자동 결정 (캠프 주간 밖이면 선택한 DAY 사용) */
+      const shotDay=campDayOf(await photoDateOf(f));
+      const target=shotDay||curDay;
+      if(target!==curDay)routed[target]=(routed[target]||0)+1;
+      if(countPhotosDay(me.email,target)>=photoLimit(me,target))borrowed=true;
+
+      const n=nextPhotoNumber(me,target);
+      if(n==null){toast("⚠ numbering full for "+target);break;}
       $("photoStatus").textContent="Converting "+f.name+" …";
       const w=await toWebp(f);
       const name=me.first+"-"+n+"."+w.ext;
-      $("photoStatus").textContent="Uploading "+name+" to "+curDay+" …";
-      const up=await uploadBlob(name,w.mime,w.blob,folderIds[curDay],
+      $("photoStatus").textContent="Uploading "+name+" to "+target+" …";
+      const up=await uploadBlob(name,w.mime,w.blob,folderIds[target],
         p=>$("photoStatus").textContent="Uploading "+name+" … "+Math.round(p*100)+"%");
 
       makePublic(up.id);
@@ -772,18 +828,23 @@ $("photoInput").addEventListener("change",async e=>{
       if(origExt!=="webp"){
         origName=me.first+"-"+n+"."+origExt;
         $("photoStatus").textContent="Uploading original "+origName+" …";
-        const upO=await uploadBlob(origName,f.type||"application/octet-stream",f,folderIds[curDay],
+        const upO=await uploadBlob(origName,f.type||"application/octet-stream",f,folderIds[target],
           p=>$("photoStatus").textContent="Uploading original "+origName+" … "+Math.round(p*100)+"%");
         origId=upO.id;
         makePublic(origId);
       }
-      await updateDb(d=>d.uploads.push({fileId:up.id,name,type:"photo",folder:curDay,email:me.email,ts:Date.now(),origId,origName}));
+      await updateDb(d=>d.uploads.push({fileId:up.id,name,type:"photo",folder:target,email:me.email,ts:Date.now(),origId,origName}));
       done++;
     }catch(err){toast("⚠ "+f.name+": "+err.message);}
   }
   $("photoStatus").textContent="";
   $("photoUpBox").classList.remove("busy");
-  if(done)toast(done+" photo(s) uploaded to "+curDay+" ✓");
+  if(done){
+    const moved=Object.keys(routed).map(d=>routed[d]+"→"+d.toUpperCase()).join(", ");
+    toast(done+" photo(s) uploaded ✓"
+      +(moved?"  📅 사진 날짜 기준 자동 분류: "+moved:"")
+      +(borrowed?"  (일부는 다른 날 쿼터 사용)":""));
+  }
   renderAll();
 });
 
@@ -840,6 +901,11 @@ function renderAll(){
   /* quota box — per-day photo counts + total videos */
   const v=countVideos(me.email);
   let q;
+  try{
+    if(me&&db&&db.uploads){
+      /* nothing */
+    }
+  }catch(e){}
   if(!canUpload(me)){
     q="<span class='warn'>Your uploads go through Kyungchul's account (couple quota: 10 photos per day / 10 videos).</span>";
   }else{
@@ -869,7 +935,7 @@ function renderAll(){
   $("dayPills").innerHTML=CONFIG.photoFolders.map(d=>{
     const lim=photoLimit(me,d);
     const c=canUp?countPhotosDay(me.email,d):0;
-    const full=canUp&&c>=lim;
+    const full=canUp&&c>=lim;   /* 빨간 표시만 — 주간 쿼터가 남으면 계속 업로드 가능 */
     return "<button data-d='"+d+"' class='"+(d===curDay?"on ":"")+(full?"fullday":"")+"'>"
       +d.toUpperCase()+(canUp?" · "+c+"/"+lim:"")+"</button>";
   }).join("");
@@ -1443,6 +1509,23 @@ const DEFAULT_FEEDBACK_DAYS={
 "* 보호자가 도착한 학생부터 **한 명씩 안전하게 귀가**할 수 있도록 안내해 주세요.",
 "* 하원 시간에 체육관에서 공놀이는 원활한 하원 진행에 방해가 되므로 삼가도록 지도해 주세요.",
 "* 기다리는 동안에는 **젠가, 공기놀이, 카드게임** 등 차분한 놀이를 하도록 안내해 주세요."
+].join("\n"),
+"2026-08-26":[
+"## 1. 출석 현황 (8/26)",
+"* 오늘 출석 **27명**",
+"",
+"## 2. 보증금(Deposit) 환불 불가 안내",
+"* Alexander Suarez",
+"* Alex Dushane",
+"* Andrra Velillari",
+"",
+"## 3. 결석 예정",
+"* **Mason** — 금요일(8/28) 참석이 어렵습니다.",
+"",
+"## 4. 학생 돌봄 및 점심시간",
+"* **Isabella · Valentina · Ezra · Rayan**이 함께 점심을 먹는 모습이 참 사랑스러웠습니다.",
+"* 아이들이 서로 어울리며 하나가 되어 가는 캠프가 되고 있어 기쁘고 감사한 하루였습니다.",
+"* 쉼이 있는 오후 보내시고, 내일 뵈어요~"
 ].join("\n"),
 "2026-08-25":[
 "## 1. 출석 현황 (8/25 · 결석 3명)",
