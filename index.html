@@ -314,6 +314,11 @@
     border:2px solid var(--gold-dim);box-shadow:0 8px 18px -10px rgba(90,70,30,.55);margin:0 auto;
     background:var(--bg-soft)}
   .stu-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .iv-play{
+    position:absolute;right:2px;bottom:2px;width:22px;height:22px;border-radius:50%;
+    background:rgba(169,129,47,.92);color:#fff;display:grid;place-items:center;z-index:2;
+    border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+  .iv-play svg{width:10px;height:10px;fill:currentColor;margin-left:1px}
   .stu-name{display:block;margin-top:7px;font-size:12px;color:var(--ink);letter-spacing:.03em}
   .lightbox.solo .lb-caption{display:block}
 
@@ -699,7 +704,7 @@
     const kids = await list("'" + rootId + "' in parents and trashed=false and mimeType='application/vnd.google-apps.folder'");
     const fid = n => { const f = kids.find(k => k.name === n); return f && f.id; };
     const WEBP = /\.webp$/i, ORIGX = /\.(jpe?g|png|heic|heif)$/i, MP4 = /\.mp4$/i;
-    const y = { day1:[], day2:[], day3:[], day4:[], day5:[], videos:[], students:[], group:[], orig:{} };
+    const y = { day1:[], day2:[], day3:[], day4:[], day5:[], videos:[], students:[], group:[], orig:{}, interviews:{} };
 
     for (const d of ["day1","day2","day3","day4","day5","group"]){
       const id = fid(d); if (!id) continue;
@@ -739,6 +744,12 @@
         .filter(f => MP4.test(f.name))
         .sort((a,b) => a.createdTime < b.createdTime ? -1 : 1)   /* first uploaded, first shown */
         .forEach(f => y.videos.push({ n: f.name, id: f.id }));
+    }
+    const iv = fid("interviews");
+    if (iv){
+      (await list("'" + iv + "' in parents and trashed=false"))
+        .filter(f => /\.(mp4|mov|m4v)$/i.test(f.name))
+        .forEach(f => { y.interviews[f.name.replace(/\.[^.]+$/, "").toLowerCase()] = f.id; });
     }
     const st = fid("students");
     if (st){
@@ -1302,19 +1313,27 @@
       groups[team]
         .sort((a,b) => (a.names[0]||"") < (b.names[0]||"") ? -1 : 1)
         .forEach(st => {
-          /* 개인정보 보호: 이름은 화면에 표시하지 않음 (SHOW_NAMES로 복원 가능).
-             파일명·db의 이름 정보는 그대로 유지됨 */
+          /* 개인정보 보호: 이름은 화면에 표시하지 않음 (SHOW_NAMES로 복원 가능) */
           const first = cap(st.names[0] || "");
           const src   = imgSrc(year, "students", st.it, 400);
           const big   = imgSrc(year, "students", st.it, 1600);
+          /* Coconut/Strawberry는 인터뷰 비디오가 있으면 클릭 시 재생, TA는 사진 확대 */
+          const base  = st.it.n.replace(/\.[^.]+$/, "").toLowerCase();
+          const ivId  = (!isTA && DFILES[year] && DFILES[year].interviews[base]) || null;
           const b = document.createElement("button");
           b.className = "stu-card";
-          b.innerHTML = "<span class='stu-thumb'><img loading='lazy' decoding='async' alt='camper photo'></span>"
+          b.innerHTML = "<span class='stu-thumb'>"
+                      + "<img loading='lazy' decoding='async' alt='camper photo'>"
+                      + (ivId ? "<span class='iv-play' aria-hidden='true'><svg viewBox='0 0 24 24'><path d='M8 5v14l11-7z'/></svg></span>" : "")
+                      + "</span>"
                       + (SHOW_NAMES ? "<span class='stu-name'>" + first + "</span>" : "");
           b.querySelector("img").src = src;
-          b.addEventListener("click", () => lb.openSolo(big,
-            SHOW_NAMES ? (first + (isTA ? " · TA" : " · Team " + team))
-                       : (isTA ? "TA" : "Team " + team)));
+          b.addEventListener("click", () => {
+            if (ivId) lb.openDriveVideo(ivId);
+            else lb.openSolo(big,
+              SHOW_NAMES ? (first + (isTA ? " · TA" : " · Team " + team))
+                         : (isTA ? "TA" : "Team " + team));
+          });
           grid.appendChild(b);
         });
       block.appendChild(grid);
@@ -1362,12 +1381,14 @@
   rebuild();                               /* 2025(repo) 즉시 표시, 2026은 Loading… */
   loadAllDriveYears().then(rebuild);        /* Drive 목록 도착하면 다시 그림 */
 
-  /* ── 방문자 카운터 (Apps Script) — 세션당 1회 기록 ── */
+  /* ── 방문자 카운터 (Apps Script) — 세션당 1회 기록.
+     이미지 비콘 방식: fetch를 막는 인앱 브라우저(카톡 등)에서도 동작 ── */
   const STATS_URL = "https://script.google.com/macros/s/AKfycbySEQz0u_0F777ouQKlomTV_XveEz6NIPU6i1kO8i5OgKrURyIaWiK-AbLpx_xT6aA5NQ/exec";
   try{
     if (STATS_URL.indexOf("PASTE_") !== 0 && !sessionStorage.getItem("hctp_hit")){
       sessionStorage.setItem("hctp_hit", "1");
-      fetch(STATS_URL, { mode: "no-cors" }).catch(function(){});
+      const px = new Image();
+      px.src = STATS_URL + (STATS_URL.indexOf("?")>=0 ? "&" : "?") + "t=" + Date.now();
     }
   }catch(e){}
 </script>

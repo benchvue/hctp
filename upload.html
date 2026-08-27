@@ -133,6 +133,25 @@
   .vs-col i{font-style:normal;font-size:9px;color:var(--muted);margin-top:4px;
     white-space:nowrap;overflow:hidden;max-width:100%}
 
+  /* ── Interview Videos ── */
+  .iv-team{margin:14px 0 4px;font-size:13px;color:var(--gold);font-weight:500;letter-spacing:.06em}
+  .iv-grid{display:flex;flex-wrap:wrap;gap:12px}
+  .iv-face{width:66px;text-align:center;background:none;border:none;cursor:pointer;
+    font-family:inherit;padding:0;-webkit-tap-highlight-color:transparent}
+  .iv-thumb{position:relative;width:58px;height:58px;border-radius:50%;margin:0 auto;
+    border:2px solid var(--line);overflow:hidden;background:#efeadd;transition:border-color .2s}
+  .iv-face.sel .iv-thumb{border-color:var(--gold);box-shadow:0 0 0 3px rgba(200,171,110,.35)}
+  .iv-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .iv-thumb .init{display:grid;place-items:center;width:100%;height:100%;
+    font-size:20px;color:var(--gold)}
+  .iv-check{position:absolute;right:-3px;bottom:-3px;width:20px;height:20px;border-radius:50%;
+    background:#1e7a46;color:#fff;font-size:12px;display:grid;place-items:center;
+    border:2px solid #fff;z-index:2}
+  .iv-name{display:block;margin-top:5px;font-size:10.5px;color:var(--ink);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .iv-ctrl{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);
+    display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13.5px}
+
   /* ── 플로팅 목차 (오른쪽 아래) ── */
   .sec{scroll-margin-top:14px}
   .toc-fab{position:fixed;right:16px;bottom:16px;z-index:60;width:48px;height:48px;
@@ -249,6 +268,18 @@
     <input type="file" id="photoInput" accept="image/*" multiple hidden>
     <div class="status" id="photoStatus"></div>
     <div class="hintline">Two files are saved per photo: <b>yourname-1.webp</b> (site) + <b>yourname-1.jpg</b> (original, for downloads). Deleting removes both.</div>
+  </div>
+
+  <!-- interview videos -->
+  <h2 class="sec" id="secInterviews">Interview Videos
+    <small>· tap a student, then upload their interview (Coconut &amp; Strawberry only)</small></h2>
+  <div class="upwrap card">
+    <div id="ivGrids"><p class="empty-note">Loading students…</p></div>
+    <div class="iv-ctrl" id="ivCtrl" style="display:none"></div>
+    <input type="file" id="ivInput" accept="video/*" hidden>
+    <div class="status" id="ivStatus"></div>
+    <div class="hintline">✓ = interview uploaded · to redo one, <b>delete it first</b>, then upload again.
+      Saved as <b>team-name.mp4</b> in the "interviews" folder.</div>
   </div>
 
   <!-- upload videos -->
@@ -397,6 +428,7 @@ const CONFIG = {
      - 단체 사진: Drive "group" 폴더, group-N.webp (뷰어 About 위에 표시) */
   studentsFolder: "students",
   groupFolder: "group",
+  interviewsFolder: "interviews",
   groupMax: 5,
   rosterFileName: "hctp-2026-roster.json",
   feedbackFileName: "hctp-2026-feedback.json",
@@ -648,6 +680,17 @@ async function loadAll(){
 
     renderAll();
 
+    /* 인터뷰 섹션: 모든 선생님 — 명단/학생사진/인터뷰 목록 로드 */
+    try{
+      for(const n of [CONFIG.studentsFolder,CONFIG.interviewsFolder]){
+        if(!folderIds[n]){const nf=await createFolder(n,CONFIG.rootFolder);folderIds[n]=nf.id;}
+      }
+      await loadRoster();
+      await loadStudents();
+      await loadInterviews();
+      renderInterviews();
+    }catch(e){$("ivGrids").innerHTML="<p class='empty-note'>⚠ "+e.message+"</p>";}
+
     /* 공개 수리 스윕: 모든 미디어 파일에 링크-공개 권한 부여 시도 (세션당 1회).
        파일 소유자는 항상 성공 → 각 선생님이 로그인하면 본인 파일은 확실히 공개됨. */
     if(!sessionStorage.getItem("hctp_sweep")){
@@ -677,9 +720,7 @@ async function loadAll(){
       document.getElementById("studentAdmin").style.display="block";
       document.getElementById("stuSection").style.display = isSuper ? "" : "none";
       if(isSuper){
-        await loadRoster();
-        await loadStudents();
-        renderStudents();
+        renderStudents();               /* 명단/사진은 위에서 이미 로드됨 */
       }
       await loadGroup();
       renderGroup();
@@ -1485,6 +1526,28 @@ const todayCampIdx=()=>{const t=new Date();t.setHours(0,0,0,0);
   return Math.min(4,Math.max(0,Math.round((t-st)/86400000)));};
 
 const DEFAULT_FEEDBACK_DAYS={
+"2026-08-27":[
+"## 1. 출석 현황 (8/27)",
+"* 오늘 출석 **27명**",
+"",
+"## 2. 학생 돌봄 및 점심시간",
+"* 역시 **치킨너겟과 핫도그**가 최고 인기 메뉴였습니다. 오늘은 도시락을 가져온 학생이 거의 없었어요.",
+"* 점심 후 놀이 공간은 **Gym과 2층 Play Area** 두 곳입니다. 정해진 공간에서 안전하게 놀도록 지도해 주시고, **빈 교실에 들어가 Hide-and-Seek을 하지 않도록** 잘 살펴봐 주세요.",
+"* 탁구 후 **공·라켓을 바닥에 두고 가는 경우**가 있습니다 — 사용한 물품은 항상 제자리에 정리하도록 안내해 주세요.",
+"* 점심 후 **쓰레기는 휴지통에**, 사용한 테이블은 스스로 깨끗하게 정리하도록 지도 부탁드립니다.",
+"",
+"## 3. Deposit Return",
+"* 아래 3명을 제외한 **모든 학생이 디파짓 리턴**을 받습니다:",
+"* Alexander Suarez · Alex Dushane · Andrra Velillari",
+"",
+"## 4. 기타 안내",
+"* 내일 **Morning Free Play** 시간에 학생들이 **캠프 티셔츠로 갈아입고 야외 그룹 사진 촬영**을 합니다.",
+"* 내일 **2:30–3:00 PM Open House**가 있습니다.",
+"* **조명하 장로님**께서 매일 오셔서 화장실을 청소해 주고 계십니다. 어제는 남자 화장실 물을 안 내리고 간 학생도 있었다고 해요 — 보이지 않는 곳에서 수고해 주시는 장로님께 감사드리며, 학생들이 **화장실을 깨끗하게 사용**하도록 안내 부탁드립니다.",
+"* **네 분의 장로님께서** 캠프 후 저녁 식사에 쓰라고 각 $200씩, **총 $800**을 모아 주셨습니다. 감사한 마음으로 캠프 펀드에 넣겠습니다.",
+"",
+"이제 하루 남았네요! 마지막 날까지 모두 화이팅하시고, 내일 뵙겠습니다. 💪"
+].join("\n"),
 "2026-08-24":[
 "## 1. 출석 현황 (8/24 · 결석 5명)",
 "* Alexander Suarez",
@@ -1647,9 +1710,96 @@ $("fbSaveBtn").addEventListener("click",async()=>{
   btn.disabled=false;
 });
 
+/* ══════════════ Interview Videos (Coconut & Strawberry) ══════════════ */
+let ivFiles=[], ivSel=null;
+const IV_TEAMS=["Coconut","Strawberry"];
+const ivBase=(team,full)=>team.toLowerCase()+"-"+slugName(full);
+const findIv=(team,full)=>ivFiles.find(f=>
+  f.name.replace(/\.[^.]+$/,"").toLowerCase()===ivBase(team,full));
+
+async function loadInterviews(){
+  if(!folderIds[CONFIG.interviewsFolder])return;
+  ivFiles=(await listChildren(folderIds[CONFIG.interviewsFolder],
+    " and mimeType!='application/vnd.google-apps.folder'"))
+    .filter(f=>/\.(mp4|mov|m4v)$/i.test(f.name));
+}
+function renderInterviews(){
+  const wrap=$("ivGrids");
+  if(!roster.teams||!IV_TEAMS.some(t=>(roster.teams[t]||[]).length)){
+    wrap.innerHTML="<p class='empty-note'>Student roster not loaded.</p>";return;
+  }
+  wrap.innerHTML="";
+  IV_TEAMS.forEach(team=>{
+    const names=(roster.teams[team]||[]);
+    if(!names.length)return;
+    const h=document.createElement("div");h.className="iv-team";
+    const done=names.filter(n=>findIv(team,n)).length;
+    h.textContent="🥥🍓"[team==="Coconut"?0:1]?team:team;
+    h.textContent=(team==="Coconut"?"🥥 ":"🍓 ")+team+"  ·  "+done+"/"+names.length;
+    wrap.appendChild(h);
+    const grid=document.createElement("div");grid.className="iv-grid";
+    names.forEach(full=>{
+      const photo=findStu(team,full), iv=findIv(team,full);
+      const sel=ivSel&&ivSel.team===team&&ivSel.full===full;
+      const b=document.createElement("button");
+      b.className="iv-face"+(sel?" sel":"");
+      b.innerHTML="<span class='iv-thumb'>"+
+        (photo?"<img alt=''>":"<span class='init'>"+(full[0]||"?")+"</span>")+
+        (iv?"<span class='iv-check'>✓</span>":"")+
+        "</span><span class='iv-name'>"+full.split(" ")[0]+"</span>";
+      if(photo)setDriveImg(b.querySelector("img"),photo.id,120,photo.thumbnailLink);
+      b.addEventListener("click",()=>{ivSel={team,full};renderInterviews();});
+      grid.appendChild(b);
+    });
+    wrap.appendChild(grid);
+  });
+  /* 선택된 학생 컨트롤 */
+  const ctrl=$("ivCtrl");
+  if(!ivSel){ctrl.style.display="none";return;}
+  const iv=findIv(ivSel.team,ivSel.full);
+  ctrl.style.display="flex";
+  ctrl.innerHTML="<b>"+ivSel.full+"</b> <span style='color:var(--muted)'>· "+ivSel.team+"</span>"+
+    (iv
+      ?" <span style='color:#1e7a46'>✓ uploaded ("+iv.name+")</span>"+
+       " <button class='mini' id='ivPlayBtn'>▶ Preview</button>"+
+       " <button class='btn-plain' id='ivDelBtn' style='color:var(--err)'>Delete</button>"
+      :" <button class='mini' id='ivUpBtn' style='padding:9px 16px'>⬆ Upload interview video</button>");
+  if(iv){
+    $("ivPlayBtn").addEventListener("click",()=>
+      window.open("https://drive.google.com/file/d/"+iv.id+"/view","_blank"));
+    $("ivDelBtn").addEventListener("click",async()=>{
+      if(!confirm("Delete "+ivSel.full+"'s interview? You can upload a new one after."))return;
+      try{
+        await deleteDriveFile(iv.id,folderIds[CONFIG.interviewsFolder]);
+        await loadInterviews();renderInterviews();toast("Interview deleted ✓");
+      }catch(e){toast("⚠ "+e.message);}
+    });
+  }else{
+    $("ivUpBtn").addEventListener("click",()=>$("ivInput").click());
+  }
+}
+$("ivInput").addEventListener("change",async e=>{
+  const f=e.target.files[0];e.target.value="";
+  if(!f||!ivSel)return;
+  if(!isVideoFile(f))return toast("⚠ "+f.name+" is not a video file");
+  if(findIv(ivSel.team,ivSel.full))return toast("⚠ Already uploaded — delete it first");
+  const ext=(f.name.split(".").pop()||"mp4").toLowerCase();
+  const name=ivBase(ivSel.team,ivSel.full)+"."+(["mp4","mov","m4v"].includes(ext)?ext:"mp4");
+  try{
+    $("ivStatus").textContent="Uploading "+name+" …";
+    const up=await uploadBlob(name,f.type||"video/mp4",f,folderIds[CONFIG.interviewsFolder],
+      p=>$("ivStatus").textContent="Uploading "+name+" … "+Math.round(p*100)+"%");
+    makePublic(up.id);
+    await loadInterviews();renderInterviews();
+    $("ivStatus").textContent="";
+    toast(ivSel.full+"'s interview uploaded ✓");
+  }catch(err){$("ivStatus").textContent="";toast("⚠ "+err.message);}
+});
+
 /* ══════════════ 플로팅 목차 (섹션 바로가기) ══════════════ */
 const TOC_ITEMS=[
   ["📸 사진 올리기","secUpPhoto"],
+  ["🎤 인터뷰 비디오","secInterviews"],
   ["🎬 비디오 올리기","secUpVideo"],
   ["🖼 사진 목록","filesTitle"],
   ["🎞 비디오 목록","videosTitle"],
