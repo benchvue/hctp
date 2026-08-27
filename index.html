@@ -672,6 +672,8 @@
 </div>
 
 <script>
+  /* site-keys.js: API 키/통계 URL을 한 곳에서 관리 (파일 교체에도 유지됨) */
+  document.write('<script src="site-keys.js?ts=' + Date.now() + '"><\/script>');
   /* files.js는 2025(아카이브) 전용 — 2026부터는 Drive에서 직접 스트리밍 */
   document.write('<script src="files.js?ts=' + Date.now() + '"><\/script>');
 </script>
@@ -687,8 +689,9 @@
      repo에 미디어를 넣지 않고, 폴더를 API 키로 실시간 조회해서
      사진은 lh3 CDN으로, 비디오는 Drive 플레이어(iframe)로 보여줍니다.
      → 선생님이 업로드하면 publish 없이 새로고침만으로 반영됩니다. */
+  const KEYS = window.HCTP_KEYS || {};     /* site-keys.js에서 로드 */
   const DRIVE = {
-    apiKey: "AIzaSyDzahk0Yhz3faRfMhDS2vQzQ2oADYXhPRg",   /* Drive API · HTTP referrer: https://benchvue.github.io/* */
+    apiKey: KEYS.apiKey || "PASTE_BROWSER_API_KEY_HERE",
     years: { "2026": "1Roissh94L1dbhzTSnYEN5IbchacskgbH" }
   };
   const DFILES = {};        /* year -> {day1:[{n,id}],...,videos,students,group,orig:{}} */
@@ -1383,7 +1386,7 @@
 
   /* ── 방문자 카운터 (Apps Script) — 세션당 1회 기록.
      이미지 비콘 방식: fetch를 막는 인앱 브라우저(카톡 등)에서도 동작 ── */
-  const STATS_URL = "https://script.google.com/macros/s/AKfycbySEQz0u_0F777ouQKlomTV_XveEz6NIPU6i1kO8i5OgKrURyIaWiK-AbLpx_xT6aA5NQ/exec";
+  const STATS_URL = (window.HCTP_KEYS && window.HCTP_KEYS.stats) || "https://script.google.com/macros/s/AKfycbySEQz0u_0F777ouQKlomTV_XveEz6NIPU6i1kO8i5OgKrURyIaWiK-AbLpx_xT6aA5NQ/exec";
   try{
     if (STATS_URL.indexOf("PASTE_") !== 0 && !sessionStorage.getItem("hctp_hit")){
       sessionStorage.setItem("hctp_hit", "1");

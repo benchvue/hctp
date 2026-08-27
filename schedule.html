@@ -87,10 +87,11 @@
 
 <footer>© HCTP · HANAIM CHURCH, ELMWOOD PARK NJ</footer>
 
+<script src="site-keys.js"></script>
 <script>
 /* ══════════ CONFIG ══════════ */
 const CONFIG = {
-  apiKey: "AIzaSyDzahk0Yhz3faRfMhDS2vQzQ2oADYXhPRg",     /* Drive API, HTTP referrer 제한: https://benchvue.github.io/* */
+  apiKey: (window.HCTP_KEYS && window.HCTP_KEYS.apiKey) || "PASTE_BROWSER_API_KEY_HERE",
   rootFolder: "1Roissh94L1dbhzTSnYEN5IbchacskgbH",   /* Drive "2026" */
   dbFolder: "db",
   scheduleFile: "hctp-2026-schedule.json"
