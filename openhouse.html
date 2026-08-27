@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HCTP Open House · Summer Camp 2026</title>
+<style>
+  :root{ --gold:#c8ab6e; --gold-dark:#a9812f; --paper:#f7f4ec; --ink:#2a251d; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:#0d0b09;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow:hidden}
+
+  /* ══════════ 시작 화면 (운영자용) ══════════ */
+  .setup{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    background:var(--paper);color:var(--ink);z-index:50}
+  .setup-card{max-width:560px;width:92%;text-align:center;padding:46px 36px;background:#fff;
+    border-radius:20px;box-shadow:0 0 0 1px rgba(169,129,47,.3),0 30px 70px -30px rgba(90,70,30,.5)}
+  .setup h1{font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:30px;
+    letter-spacing:.06em;color:var(--gold-dark)}
+  .setup h1 em{font-style:italic}
+  .setup .sub{margin-top:10px;color:#867d6d;font-size:14px;line-height:1.8}
+  .bigbtn{margin-top:26px;display:inline-block;border:1px solid var(--gold-dark);
+    border-radius:999px;background:var(--gold-dark);color:#fff;font-size:16px;
+    padding:14px 34px;cursor:pointer;font-family:inherit}
+  .bigbtn:hover{background:#fff;color:var(--gold-dark)}
+  .bigbtn:disabled{opacity:.4;cursor:default}
+  .bigbtn.alt{background:#fff;color:var(--gold-dark)}
+  .setup .stats{margin-top:20px;font-size:13.5px;color:#555;line-height:2}
+  .setup .stats b{color:var(--gold-dark)}
+  .setup .opts{margin-top:16px;font-size:13.5px;color:#555}
+  .setup .opts input{width:56px;font-size:14px;text-align:center;padding:5px;
+    border:1px solid #ddd;border-radius:8px;font-family:inherit}
+  .setup .hint{margin-top:22px;font-size:12px;color:#a09884;line-height:1.9;text-align:left;
+    border-top:1px dashed #e3dcc9;padding-top:16px}
+  .setup .warn{color:#b4404f;font-size:12.5px;margin-top:10px;display:none}
+
+  /* ══════════ 쇼 화면 ══════════ */
+  .stage{position:fixed;inset:0;background:#000}
+  .slide{position:absolute;inset:0;opacity:0;transition:opacity 1.4s ease}
+  .slide.show{opacity:1}
+  .slide .bg{position:absolute;inset:-6%;background-size:cover;background-position:center;
+    filter:blur(34px) brightness(.42);transform:scale(1.1)}
+  .slide .fg{position:absolute;inset:0;background-size:contain;background-position:center;
+    background-repeat:no-repeat}
+  .slide.kb1 .fg{animation:kb1 var(--kb,9s) ease-in-out forwards}
+  .slide.kb2 .fg{animation:kb2 var(--kb,9s) ease-in-out forwards}
+  @keyframes kb1{from{transform:scale(1)}to{transform:scale(1.055) translate(.7%,-.5%)}}
+  @keyframes kb2{from{transform:scale(1.055) translate(-.6%,.5%)}to{transform:scale(1)}}
+
+  video.showvid{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+
+  .caption{position:fixed;left:34px;bottom:30px;z-index:10;
+    font-family:Georgia,serif;font-style:italic;font-size:26px;letter-spacing:.08em;
+    color:#f3e7cd;text-shadow:0 2px 14px rgba(0,0,0,.8);opacity:.92;pointer-events:none}
+  .brand{position:fixed;right:34px;bottom:30px;z-index:10;font-size:14px;letter-spacing:.3em;
+    text-transform:uppercase;color:rgba(243,231,205,.55);pointer-events:none}
+
+  /* 사이클 사이 타이틀 카드 */
+  .titlecard{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;background:#0d0b09;opacity:0;
+    transition:opacity 1.4s ease;pointer-events:none;text-align:center;padding:0 6vw}
+  .titlecard.show{opacity:1}
+  .titlecard .t1{font-family:Georgia,serif;font-size:clamp(34px,6vw,72px);
+    letter-spacing:.1em;color:#f3e7cd}
+  .titlecard .t1 em{font-style:italic;color:var(--gold)}
+  .titlecard .t2{margin-top:18px;font-size:clamp(14px,2vw,20px);letter-spacing:.4em;
+    text-transform:uppercase;color:rgba(243,231,205,.6)}
+  .titlecard .rule{width:120px;height:1px;background:var(--gold);opacity:.6;margin-top:26px}
+
+  .paused-badge{position:fixed;top:26px;right:30px;z-index:30;font-size:13px;letter-spacing:.2em;
+    color:#f3e7cd;border:1px solid rgba(200,171,110,.6);border-radius:999px;padding:8px 18px;
+    background:rgba(13,11,9,.6);display:none}
+  .tapnote{position:fixed;inset:0;z-index:25;display:none;align-items:center;justify-content:center;
+    background:rgba(0,0,0,.55);font-size:20px;letter-spacing:.1em;color:#f3e7cd}
+</style>
+</head>
+<body>
+
+<!-- ══════════ 운영자 시작 화면 ══════════ -->
+<div class="setup" id="setup">
+  <div class="setup-card">
+    <h1>HCTP <em>Open House</em></h1>
+    <div class="sub">Summer Camp 2026 · Friday Showcase<br>55" TV · offline slideshow</div>
+
+    <div>
+      <button class="bigbtn alt" id="pickBtn">1 · 미디어 폴더 선택</button>
+      <input type="file" id="pickInput" webkitdirectory multiple hidden>
+    </div>
+    <div class="stats" id="stats">폴더를 선택하면 사진·비디오·음악을 자동으로 찾습니다.</div>
+    <div class="warn" id="heicWarn"></div>
+
+    <div class="opts">
+      사진 1장당 <input type="number" id="secsInput" value="6" min="3" max="20"> 초 ·
+      비디오 소리 <input type="checkbox" id="vidSound" checked style="width:auto;transform:scale(1.2)">
+    </div>
+
+    <div><button class="bigbtn" id="startBtn" disabled>2 · Start Show ▶</button></div>
+
+    <div class="hint">
+      <b>폴더 구성</b> — Drive에서 받은 <b>2026</b> 폴더를 그대로 선택하면 됩니다:
+      day1~day5(사진), video(영상), group(단체) 포함 · <b>music</b> 폴더를 만들어 mp3를 넣으면 배경음악 재생
+      · students 폴더는 자동 제외 · 같은 사진의 webp/jpg 중 <b>큰 원본을 자동 선택</b> (TV 화질)<br>
+      <b>재생 중 조작</b> — Space 일시정지 · → 다음 · M 음악 음소거 · F 전체화면 · Esc 종료
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ 쇼 ══════════ -->
+<div class="stage" id="stage">
+  <div class="slide" id="slideA"><div class="bg"></div><div class="fg"></div></div>
+  <div class="slide" id="slideB"><div class="bg"></div><div class="fg"></div></div>
+  <video class="showvid" id="vid" style="display:none" playsinline></video>
+</div>
+<div class="caption" id="caption"></div>
+<div class="brand">HCTP · Summer Camp 2026</div>
+<div class="titlecard" id="titlecard">
+  <div class="t1">HCTP <em>Summer Camp</em></div>
+  <div class="t2">Twenty Twenty-Six · Thank You for a Wonderful Week</div>
+  <div class="rule"></div>
+</div>
+<div class="paused-badge" id="pausedBadge">PAUSED</div>
+<div class="tapnote" id="tapnote">▶ &nbsp;Press Space to play video</div>
+<audio id="bgm"></audio>
+
+<script>
+"use strict";
+/* ══════════════ 설정 ══════════════ */
+const DAY_LABEL = {
+  day1:"Day 1 · Monday",  day2:"Day 2 · Tuesday", day3:"Day 3 · Wednesday",
+  day4:"Day 4 · Thursday", day5:"Day 5 · Friday",
+  group:"All Together",    video:"Camp Video", videos:"Camp Video"
+};
+const IMG_EXT = /\.(jpe?g|png|webp|gif)$/i;
+const VID_EXT = /\.(mp4|mov|m4v)$/i;
+const AUD_EXT = /\.(mp3|m4a|aac)$/i;
+const HEIC_EXT = /\.(heic|heif)$/i;
+
+let photos = [], videos = [], tracks = [];
+let queue = [], qi = 0, cycle = 0;
+let running = false, paused = false, timer = null;
+let photoSecs = 6, videoSound = true;
+let activeSlide = 0, kbFlip = 0;
+
+const $ = id => document.getElementById(id);
+
+/* ══════════════ 폴더 선택 → 미디어 분류 ══════════════ */
+$("pickBtn").addEventListener("click", () => $("pickInput").click());
+$("pickInput").addEventListener("change", e => {
+  const files = [...e.target.files];
+  const pools = { img: [], vid: [], aud: [] };
+  let heic = 0;
+
+  /* 같은 폴더·같은 기본이름은 가장 큰 파일(원본)만 사용 */
+  const best = {};
+  files.forEach(f => {
+    const rel = (f.webkitRelativePath || f.name).replace(/\\/g, "/");
+    const parts = rel.toLowerCase().split("/");
+    if (parts.some(p => p === "students" || p === "thumbs")) return;   /* 제외 */
+    const name = parts[parts.length - 1];
+    if (HEIC_EXT.test(name)) { heic++; return; }                        /* 브라우저 표시 불가 */
+    if (IMG_EXT.test(name) || VID_EXT.test(name)) {
+      const base = rel.toLowerCase().replace(/\.[^.]+$/, "");
+      if (!best[base] || f.size > best[base].size) best[base] = f;
+    } else if (AUD_EXT.test(name)) {
+      pools.aud.push(f);
+    }
+  });
+  Object.values(best).forEach(f => {
+    const name = f.name.toLowerCase();
+    if (VID_EXT.test(name)) pools.vid.push(f); else pools.img.push(f);
+  });
+
+  const folderOf = f => {
+    const parts = (f.webkitRelativePath || "").replace(/\\/g, "/").toLowerCase().split("/");
+    for (const p of parts) if (DAY_LABEL[p]) return p;
+    return "";
+  };
+  photos = pools.img.map(f => ({
+    url: URL.createObjectURL(f),
+    label: DAY_LABEL[folderOf(f)] || ""
+  }));
+  videos = pools.vid
+    .sort((a, b) => a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1)
+    .map(f => ({ url: URL.createObjectURL(f), label: "Camp Video" }));
+  tracks = pools.aud
+    .sort((a, b) => a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1)
+    .map(f => URL.createObjectURL(f));
+
+  $("stats").innerHTML =
+    "사진 <b>" + photos.length + "</b>장 · 비디오 <b>" + videos.length + "</b>개 · 음악 <b>" +
+    tracks.length + "</b>곡" + (tracks.length ? "" : " <span style='color:#b4404f'>(music 폴더에 mp3 없음 — 무음 진행)</span>");
+  if (heic) {
+    $("heicWarn").style.display = "block";
+    $("heicWarn").textContent = "⚠ HEIC 파일 " + heic + "개는 브라우저에서 표시할 수 없어 제외했습니다 (JPG 변환 권장)";
+  }
+  $("startBtn").disabled = photos.length === 0;
+});
+
+/* ══════════════ 재생 큐: 사진 셔플 + 비디오 고르게 배치 ══════════════ */
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) {
+  const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+function buildQueue(){
+  const ph = shuffle(photos.slice()).map(p => ({ type: "photo", ...p }));
+  if (videos.length){
+    const gap = Math.max(1, Math.floor(ph.length / (videos.length + 1)));
+    videos.forEach((v, i) => {
+      const pos = Math.min(ph.length, (i + 1) * gap + i);
+      ph.splice(pos, 0, { type: "video", ...v });
+    });
+  }
+  queue = ph; qi = 0;
+}
+
+/* ══════════════ 배경음악 ══════════════ */
+const bgm = $("bgm");
+let playlist = [], ti = 0, bgmVol = 0.7;
+function startMusic(){
+  if (!tracks.length) return;
+  playlist = shuffle(tracks.slice()); ti = 0;
+  bgm.src = playlist[0]; bgm.volume = bgmVol;
+  bgm.play().catch(function(){});
+}
+bgm.addEventListener("ended", () => {
+  ti = (ti + 1) % playlist.length;
+  if (ti === 0) playlist = shuffle(tracks.slice());
+  bgm.src = playlist[ti]; bgm.play().catch(function(){});
+});
+function fadeBgm(target, ms){
+  const from = bgm.volume, steps = 20, dt = (ms || 700) / steps;
+  let k = 0;
+  const iv = setInterval(() => {
+    k++; bgm.volume = Math.max(0, Math.min(1, from + (target - from) * k / steps));
+    if (k >= steps) clearInterval(iv);
+  }, dt);
+}
+
+/* ══════════════ 슬라이드 표시 ══════════════ */
+const slides = [$("slideA"), $("slideB")];
+function showPhoto(item, first){
+  const next = slides[1 - activeSlide], cur = slides[activeSlide];
+  next.querySelector(".bg").style.backgroundImage = "url('" + item.url + "')";
+  next.querySelector(".fg").style.backgroundImage = "url('" + item.url + "')";
+  next.style.setProperty("--kb", (photoSecs + 3) + "s");
+  next.classList.remove("kb1", "kb2");
+  void next.offsetWidth;                       /* 애니메이션 재시작 */
+  next.classList.add(kbFlip ? "kb1" : "kb2"); kbFlip = 1 - kbFlip;
+  next.classList.add("show"); cur.classList.remove("show");
+  activeSlide = 1 - activeSlide;
+  $("caption").textContent = item.label || "";
+  /* 다음 이미지 미리 로드 */
+  const peek = queue[(qi + 1) % queue.length];
+  if (peek && peek.type === "photo") { const im = new Image(); im.src = peek.url; }
+}
+
+const vid = $("vid");
+function showVideo(item){
+  fadeBgm(0.06, 700);
+  vid.style.display = "block";
+  vid.src = item.url;
+  vid.muted = !videoSound;
+  $("caption").textContent = item.label || "";
+  const p = vid.play();
+  if (p && p.catch) p.catch(() => {           /* 자동재생 차단 시 안내 */
+    $("tapnote").style.display = "flex";
+  });
+}
+function endVideo(){
+  vid.pause(); vid.removeAttribute("src"); vid.load();
+  vid.style.display = "none";
+  $("tapnote").style.display = "none";
+  fadeBgm(bgmVol, 900);
+  advance();
+}
+vid.addEventListener("ended", endVideo);
+vid.addEventListener("error", () => { if (running) endVideo(); });
+
+/* ══════════════ 진행 ══════════════ */
+function step(){
+  if (!running || paused) return;
+  const item = queue[qi];
+  if (!item){ cycleBreak(); return; }
+  if (item.type === "photo"){
+    showPhoto(item);
+    timer = setTimeout(advance, photoSecs * 1000);
+  } else {
+    slides.forEach(s => s.classList.remove("show"));
+    showVideo(item);
+  }
+}
+function advance(){
+  clearTimeout(timer);
+  qi++;
+  if (qi >= queue.length){ cycleBreak(); return; }
+  step();
+}
+function cycleBreak(){
+  cycle++;
+  $("titlecard").classList.add("show");
+  slides.forEach(s => s.classList.remove("show"));
+  $("caption").textContent = "";
+  setTimeout(() => {
+    $("titlecard").classList.remove("show");
+    buildQueue();                              /* 매 사이클 새로운 순서 */
+    setTimeout(step, 1200);
+  }, 6000);
+}
+
+/* ══════════════ 시작 / 조작 ══════════════ */
+$("startBtn").addEventListener("click", () => {
+  photoSecs = Math.max(3, Math.min(20, parseInt($("secsInput").value, 10) || 6));
+  videoSound = $("vidSound").checked;
+  $("setup").style.display = "none";
+  running = true;
+  buildQueue();
+  startMusic();
+  if (document.documentElement.requestFullscreen)
+    document.documentElement.requestFullscreen().catch(function(){});
+  /* 타이틀 카드로 시작 */
+  $("titlecard").classList.add("show");
+  setTimeout(() => { $("titlecard").classList.remove("show"); step(); }, 4000);
+});
+
+document.addEventListener("keydown", e => {
+  if (!running) return;
+  if (e.code === "Space"){
+    e.preventDefault();
+    if ($("tapnote").style.display === "flex"){    /* 차단된 비디오 재생 */
+      $("tapnote").style.display = "none";
+      vid.play().catch(function(){});
+      return;
+    }
+    paused = !paused;
+    $("pausedBadge").style.display = paused ? "block" : "none";
+    if (vid.style.display === "block"){ paused ? vid.pause() : vid.play(); }
+    else if (!paused) step();
+    if (paused) clearTimeout(timer);
+    paused ? bgm.pause() : bgm.play().catch(function(){});
+  }
+  else if (e.code === "ArrowRight"){
+    if (vid.style.display === "block") endVideo(); else advance();
+  }
+  else if (e.key === "m" || e.key === "M"){ bgm.muted = !bgm.muted; }
+  else if (e.key === "f" || e.key === "F"){
+    document.fullscreenElement
+      ? document.exitFullscreen()
+      : document.documentElement.requestFullscreen().catch(function(){});
+  }
+});
+</script>
+</body>
+</html>

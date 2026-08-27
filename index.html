@@ -195,11 +195,23 @@
   .slide{
     position: absolute; inset: 0;
     width: 100%; height: 100%;
-    object-fit: cover;
+    object-fit: contain;                 /* 사진 전체 표시 — 사람 잘림 없음 */
     opacity: 0;
     transition: opacity .7s ease;
+    z-index: 1;
   }
   .slide.active{ opacity: 1; }
+  /* 여백은 같은 사진을 흐리게 확대해 채움 (레터박스 대신) */
+  .slide-bg{
+    position: absolute; inset: -8%;
+    background-size: cover; background-position: center;
+    filter: blur(26px) brightness(.55) saturate(1.1);
+    transform: scale(1.06);
+    opacity: 0;
+    transition: opacity .7s ease;
+    z-index: 0;
+  }
+  .slide-bg.active{ opacity: 1; }
   .slide-frame::after{
     content:"";
     position:absolute; inset:0;
@@ -1077,11 +1089,14 @@
                currentSrc(){ return ""; }, step(){}, setActive(){}, tick(){} };
     }
 
+    const bgA = document.createElement("div"), bgB = document.createElement("div");
+    bgA.className = bgB.className = "slide-bg";
     const imgA = new Image(), imgB = new Image();
     imgA.className = imgB.className = "slide";
     imgA.alt = imgB.alt = label + " camp photo";
     imgA.decoding = imgB.decoding = "async";
-    frame.append(imgA, imgB);
+    imgA._bg = bgA; imgB._bg = bgB;
+    frame.append(bgA, bgB, imgA, imgB);
     const showDl = canDownload(year);
     frame.insertAdjacentHTML("beforeend",
       '<span class="day-tag">' + label + '</span>' +
@@ -1112,8 +1127,11 @@
       pre.onload = () => {
         idx = target;
         back.src = pre.src;
+        back._bg.style.backgroundImage = "url('" + pre.src + "')";
         back.classList.add("active");
+        back._bg.classList.add("active");
         front.classList.remove("active");
+        front._bg.classList.remove("active");
         const t = front; front = back; back = t;
         counter.textContent = (idx + 1) + " / " + files.length;
         if (lb.open && lb.imgCtrl === ctrl) lb.refresh();
@@ -1124,7 +1142,9 @@
     }
 
     front.src = src(0);
+    front._bg.style.backgroundImage = "url('" + src(0) + "')";
     front.classList.add("active");
+    front._bg.classList.add("active");
     counter.textContent = "1 / " + files.length;
 
     frame.addEventListener("click", e => {
@@ -1343,7 +1363,7 @@
   loadAllDriveYears().then(rebuild);        /* Drive 목록 도착하면 다시 그림 */
 
   /* ── 방문자 카운터 (Apps Script) — 세션당 1회 기록 ── */
-  const STATS_URL = "https://script.google.com/macros/s/AKfycbySEQz0u_0F777ouQKlomTV_XveEz6NIPU6i1kO8i5OgKrURyIaWiK-AbLpx_xT6aA5NQ/exec";
+  const STATS_URL = "PASTE_STATS_URL_HERE";
   try{
     if (STATS_URL.indexOf("PASTE_") !== 0 && !sessionStorage.getItem("hctp_hit")){
       sessionStorage.setItem("hctp_hit", "1");
