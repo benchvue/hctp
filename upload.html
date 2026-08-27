@@ -138,8 +138,8 @@
     font-size:13.5px;color:var(--gold);font-weight:500;letter-spacing:.06em}
   .iv-team:first-child{margin-top:0;padding-top:0;border-top:none}
   .iv-grid{display:flex;flex-wrap:wrap;gap:12px}
-  .iv-face{width:66px;text-align:center;background:none;border:none;cursor:pointer;
-    font-family:inherit;padding:0;-webkit-tap-highlight-color:transparent}
+  .iv-face{position:relative;width:66px;text-align:center;background:none;border:none;
+    cursor:pointer;font-family:inherit;padding:0;-webkit-tap-highlight-color:transparent}
   .iv-thumb{display:block;position:relative;width:58px;height:58px;border-radius:50%;
     margin:0 auto;border:2px solid var(--line);overflow:hidden;background:#efeadd;
     transition:border-color .2s}
@@ -147,9 +147,9 @@
   .iv-thumb img{width:100%;height:100%;object-fit:cover;display:block}
   .iv-thumb .init{display:grid;place-items:center;width:100%;height:100%;
     font-size:20px;color:var(--gold)}
-  .iv-check{position:absolute;right:-3px;bottom:-3px;width:20px;height:20px;border-radius:50%;
+  .iv-check{position:absolute;left:0;top:-4px;width:20px;height:20px;border-radius:50%;
     background:#1e7a46;color:#fff;font-size:12px;display:grid;place-items:center;
-    border:2px solid #fff;z-index:2}
+    border:2px solid #fff;z-index:2;box-shadow:0 2px 6px rgba(0,0,0,.25)}
   .iv-name{display:block;margin-top:5px;font-size:10.5px;color:var(--ink);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .iv-ctrl{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);
@@ -1748,8 +1748,9 @@ function renderInterviews(){
       b.className="iv-face"+(sel?" sel":"");
       b.innerHTML="<span class='iv-thumb'>"+
         (photo?"<img alt=''>":"<span class='init'>"+(full[0]||"?")+"</span>")+
+        "</span>"+
         (iv?"<span class='iv-check'>✓</span>":"")+
-        "</span><span class='iv-name'>"+full.split(" ")[0]+"</span>";
+        "<span class='iv-name'>"+full.split(" ")[0]+"</span>";
       if(photo)setDriveImg(b.querySelector("img"),photo.id,120,photo.thumbnailLink);
       b.addEventListener("click",()=>{ivSel={team,full};renderInterviews();});
       grid.appendChild(b);
