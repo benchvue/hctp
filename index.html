@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -298,6 +298,20 @@
     box-shadow:0 0 0 5px rgba(247,244,236,1),0 0 0 6px rgba(169,129,47,.25),
       0 24px 50px -18px rgba(90,70,30,.35);
     -webkit-tap-highlight-color:transparent}
+  .hl-card{position:relative;display:block;width:100%;border:none;padding:0;cursor:pointer;
+    border-radius:18px;overflow:hidden;background:#131011;
+    box-shadow:0 22px 50px -22px rgba(60,45,20,.5)}
+  .hl-card img{width:100%;display:block;opacity:.85}
+  .hl-play{position:absolute;inset:0;display:grid;place-items:center}
+  .hl-play span{width:74px;height:74px;border-radius:50%;background:rgba(169,129,47,.92);
+    display:grid;place-items:center;border:3px solid #fff;
+    box-shadow:0 10px 30px rgba(0,0,0,.45);transition:transform .2s}
+  .hl-card:hover .hl-play span{transform:scale(1.08)}
+  .hl-play svg{width:30px;height:30px;fill:#fff;margin-left:4px}
+  .hl-dl{margin-top:12px;text-align:center}
+  .hl-dl a{display:inline-block;font-size:13.5px;letter-spacing:.06em;color:var(--gold-dark);
+    border:1px solid var(--gold-dark);border-radius:999px;padding:9px 22px;text-decoration:none}
+  .hl-dl a:hover{background:var(--gold-dark);color:#fff}
   .group-card img{display:block;width:100%;height:auto}
 
   /* ── Camp Teams (학생 얼굴 그리드) ────── */
@@ -589,6 +603,13 @@
 </div>
 <section class="group-wrap" id="groupRoot" style="display:none"></section>
 
+<!-- ══════════ Highlight Film ══════════ -->
+<div class="section-head" id="hlHead" style="display:none;padding-top:20px">
+  <h2 class="section-title">Highlight Film</h2>
+  <p class="section-sub">our week in two minutes 🎬</p>
+</div>
+<section class="group-wrap" id="hlRoot" style="display:none"></section>
+
 <!-- ══════════ About ══════════ -->
 <div class="section-head">
   <h2 class="section-title">About Us</h2>
@@ -707,7 +728,7 @@
     const kids = await list("'" + rootId + "' in parents and trashed=false and mimeType='application/vnd.google-apps.folder'");
     const fid = n => { const f = kids.find(k => k.name === n); return f && f.id; };
     const WEBP = /\.webp$/i, ORIGX = /\.(jpe?g|png|heic|heif)$/i, MP4 = /\.mp4$/i;
-    const y = { day1:[], day2:[], day3:[], day4:[], day5:[], videos:[], students:[], group:[], orig:{}, interviews:{} };
+    const y = { day1:[], day2:[], day3:[], day4:[], day5:[], videos:[], students:[], group:[], orig:{}, interviews:{}, highlight:null };
 
     for (const d of ["day1","day2","day3","day4","day5","group"]){
       const id = fid(d); if (!id) continue;
@@ -747,6 +768,13 @@
         .filter(f => MP4.test(f.name))
         .sort((a,b) => a.createdTime < b.createdTime ? -1 : 1)   /* first uploaded, first shown */
         .forEach(f => y.videos.push({ n: f.name, id: f.id }));
+    }
+    const hl = fid("highlight");
+    if (hl){
+      const hf = (await list("'" + hl + "' in parents and trashed=false"))
+        .filter(f => /\.(mp4|mov|m4v)$/i.test(f.name))
+        .sort((a,b) => Number(b.size||0) - Number(a.size||0))[0];
+      if (hf) y.highlight = { id: hf.id, n: hf.name };
     }
     const iv = fid("interviews");
     if (iv){
@@ -1261,6 +1289,25 @@
   }
 
   /* ══════════════ Group Photo (단체 사진) ══════════════ */
+  function buildHighlight(year){
+    const head = document.getElementById("hlHead");
+    const root = document.getElementById("hlRoot");
+    const hf = DFILES[year] && DFILES[year].highlight;
+    if (!hf){ head.style.display="none"; root.style.display="none"; root.innerHTML=""; return; }
+    head.style.display=""; root.style.display="";
+    root.innerHTML =
+      "<div class='group-item'>" +
+      "<button class='hl-card' aria-label='Play highlight film'>" +
+      "<img loading='lazy' decoding='async' alt='HCTP " + year + " highlight film' " +
+      "src='https://drive.google.com/thumbnail?id=" + hf.id + "&sz=w1600'>" +
+      "<span class='hl-play'><span><svg viewBox='0 0 24 24'><path d='M8 5v14l11-7z'/></svg></span></span>" +
+      "</button>" +
+      "<div class='hl-dl'><a href='https://drive.google.com/uc?export=download&id=" + hf.id + "'>" +
+      "⬇ &nbsp;Download the film</a></div>" +
+      "</div>";
+    root.querySelector(".hl-card").addEventListener("click", () => lb.openDriveVideo(hf.id));
+  }
+
   function buildGroup(year){
     const head = document.getElementById("groupHead");
     const root = document.getElementById("groupRoot");
@@ -1379,6 +1426,7 @@
     buildVideos(curYear);
     buildTeams(curYear);
     buildGroup(curYear);
+    buildHighlight(curYear);
   }
 
   rebuild();                               /* 2025(repo) 즉시 표시, 2026은 Loading… */
@@ -1386,7 +1434,7 @@
 
   /* ── 방문자 카운터 (Apps Script) — 세션당 1회 기록.
      이미지 비콘 방식: fetch를 막는 인앱 브라우저(카톡 등)에서도 동작 ── */
-  const STATS_URL = (window.HCTP_KEYS && window.HCTP_KEYS.stats) || "https://script.google.com/macros/s/AKfycbySEQz0u_0F777ouQKlomTV_XveEz6NIPU6i1kO8i5OgKrURyIaWiK-AbLpx_xT6aA5NQ/exec";
+  const STATS_URL = (window.HCTP_KEYS && window.HCTP_KEYS.stats) || "PASTE_STATS_URL_HERE";
   try{
     if (STATS_URL.indexOf("PASTE_") !== 0 && !sessionStorage.getItem("hctp_hit")){
       sessionStorage.setItem("hctp_hit", "1");
