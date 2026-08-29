@@ -445,15 +445,15 @@ const CONFIG = {
      (파트타임 몫은 30/일 안에 충분히 포함되므로 별도 가산 없음)
      Camp days: day1=Mon .. day5=Fri */
   teachers: [
-    { name:"Hae-young Chun",    first:"haeyoung",  email:"hyc333@gmail.com",     photoMax:30, videoMax:20 },
-    { name:"Henry Hongsok",     first:"henry",     email:"hongskwon@gmail.com",  photoMax:50, videoMax:20 },
+    { name:"Hae-young Chun",    first:"haeyoung",  email:"hyc333@gmail.com",     photoMax:30, videoMax:40 },
+    { name:"Henry Hongsok",     first:"henry",     email:"hongskwon@gmail.com",  photoMax:50, videoMax:40 },
     { name:"Ellen Lee",         first:"ellen",     email:"sjsend@hotmail.com",   photoMax:0,  videoMax:0,
       note:"uploads via Kyungchul (couple quota)" },
-    { name:"Jongbin Ym",        first:"jongbin",   email:"benchvue101@gmail.com",photoMax:100,videoMax:20,
+    { name:"Jongbin Ym",        first:"jongbin",   email:"benchvue101@gmail.com",photoMax:100,videoMax:40,
       note:"super admin · + part-time teacher Hyejun Lim (Wed-Fri)" },
-    { name:"Mihee Kang",        first:"mihee",     email:"mihekang@gmail.com",   photoMax:30, videoMax:20,
+    { name:"Mihee Kang",        first:"mihee",     email:"mihekang@gmail.com",   photoMax:30, videoMax:40,
       note:"+ part-time teachers Juyoung Lee (Mon-Tue) & Soohyun Woo (Tue-Wed)" },
-    { name:"Kyungchul Lee",     first:"kyungchul", email:"kcsend@gmail.com",     photoMax:30, videoMax:20,
+    { name:"Kyungchul Lee",     first:"kyungchul", email:"kcsend@gmail.com",     photoMax:30, videoMax:40,
       note:"couple quota with Ellen (shared account)" }
   ]
 };
@@ -1452,7 +1452,7 @@ $("cropUpload").addEventListener("click",async()=>{
 });
 
 /* ══════════════ Visitors (Apps Script 카운터) ══════════════ */
-const STATS_URL = "https://script.google.com/macros/s/AKfycbySEQz0u_0F777ouQKlomTV_XveEz6NIPU6i1kO8i5OgKrURyIaWiK-AbLpx_xT6aA5NQ/exec";
+const STATS_URL = (window.HCTP_KEYS && window.HCTP_KEYS.stats) || "PASTE_STATS_URL_HERE";
 
 async function loadVisitors(){
   const el=$("vsCard");
