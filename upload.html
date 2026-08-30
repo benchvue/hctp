@@ -436,7 +436,8 @@ const CONFIG = {
   groupMax: 5,
   rosterFileName: "hctp-2026-roster.json",
   feedbackFileName: "hctp-2026-feedback.json",
-  campStart: "2026-08-24",        /* day1 = 월요일. DAY 버튼 기본값·전달사항 날짜 탭에 사용 */
+  campStart: "2026-08-24",
+  uploadsLocked: true,            /* 캠프 종료 후 잠금 — super admin 외 전원 read-only. 내년에 false로 */        /* day1 = 월요일. DAY 버튼 기본값·전달사항 날짜 탭에 사용 */
   teamNames: ["Coconut","Strawberry","TA"],   /* TA = 세 번째 그룹 (뷰어에선 "TAs"로 표시) */
 
   /* Quotas: photoMax = PER DAY (number = same every day,
@@ -459,7 +460,7 @@ const CONFIG = {
 };
 
 /* ══════════════ state ══════════════ */
-let accessToken=null, myEmail="", me=null, isSuper=false, canDeleteAll=false, tokenClient=null;
+let accessToken=null, myEmail="", me=null, isSuper=false, canDeleteAll=false, LOCKED=false, tokenClient=null;
 let folderIds={};            /* name -> id (day1..day5, video, db) */
 let dbFileId=null;
 let db={uploads:[]};         /* {fileId,name,type:'photo'|'video',folder,email,ts} */
@@ -503,11 +504,25 @@ const initAuth=()=>{
         if(!me){accessToken=null;$("deniedMsg").style.display="block";return;}
         isSuper=(myEmail===CONFIG.superAdmin.toLowerCase());
         canDeleteAll=isSuper||CONFIG.deleteAdmins.some(e=>e.toLowerCase()===myEmail);
+        LOCKED=CONFIG.uploadsLocked&&!isSuper;
+        if(LOCKED)canDeleteAll=false;
         $("lockScreen").style.display="none";$("panel").style.display="block";
         $("whoAmI").innerHTML="Signed in: <b>"+me.name+"</b> · "+myEmail+(isSuper?" · <b>SUPER ADMIN</b>":"");
         loadAll();
         loadVisitors();
         $("tocFab").style.display="grid";
+        if(LOCKED&&!document.getElementById("lockBanner")){
+          $("panel").insertAdjacentHTML("afterbegin",
+            "<div class='card' id='lockBanner' style='border:1px solid var(--gold);"+
+            "background:linear-gradient(135deg,#fdf9ef,#f7efdc);padding:18px 20px;margin-bottom:18px;"+
+            "font-size:14.5px;line-height:1.75'>"+
+            "🔒 <b>2026 캠프 업로드가 마감되었습니다</b> — 아래의 모든 사진·비디오·전달사항은 "+
+            "이제 <b>열람만 가능</b>합니다 (read-only).<br>"+
+            "한 주 동안 정말 수고 많으셨습니다! 선생님들이 남겨주신 사진과 영상 덕분에 "+
+            "아이들의 여름이 아름답게 기록되었습니다. 감사합니다 🙏<br>"+
+            "<span style='color:var(--muted);font-size:12.5px'>Uploads are closed for 2026 — "+
+            "everything below is view-only. Thank you for a wonderful week!</span></div>");
+        }
       }).catch(()=>toast("Could not fetch account info"));
     }
   });
@@ -713,7 +728,7 @@ async function loadAll(){
 
     /* 사진 관리 패널 — 단체 사진: super + groupAdmins / 학생 사진: super 전용 */
     const isGroupAdmin = isSuper ||
-      CONFIG.groupAdmins.some(e=>e.toLowerCase()===myEmail);
+      (!LOCKED && CONFIG.groupAdmins.some(e=>e.toLowerCase()===myEmail));
     if(isGroupAdmin){
       const need = isSuper
         ? [CONFIG.studentsFolder, CONFIG.groupFolder]
@@ -839,6 +854,7 @@ $("videoBtn").addEventListener("click",()=>$("videoInput").click());
 
 $("photoInput").addEventListener("change",async e=>{
   const files=[...e.target.files];e.target.value="";
+  if(LOCKED)return toast("🔒 2026 업로드가 마감되었습니다 (read-only)");
   if(!files.length)return;
   $("photoUpBox").classList.add("busy");
   let done=0, routed={}, borrowed=false;
@@ -895,6 +911,7 @@ $("photoInput").addEventListener("change",async e=>{
 
 $("videoInput").addEventListener("change",async e=>{
   const files=[...e.target.files];e.target.value="";
+  if(LOCKED)return toast("🔒 2026 업로드가 마감되었습니다 (read-only)");
   if(!files.length)return;
   $("videoUpBox").classList.add("busy");
   let done=0;
@@ -922,6 +939,7 @@ $("videoInput").addEventListener("change",async e=>{
 
 /* ══════════════ delete ══════════════ */
 async function removeUpload(u){
+  if(LOCKED)return toast("🔒 2026 업로드가 마감되어 삭제할 수 없습니다");
   if(!canDeleteAll&&u.email.toLowerCase()!==myEmail)return toast("You can only delete your own files");
   if(!confirm("Delete "+u.name+" ("+u.folder+") ?"))return;
   try{
@@ -1048,7 +1066,7 @@ function renderAll(){
 function cardHtml(u){
   const t=teacherByEmail(u.email);
   const owner=(canDeleteAll&&t)?"<span class='owner'>"+t.first+"</span>":"";
-  const canDel=canDeleteAll||u.email.toLowerCase()===myEmail;
+  const canDel=!LOCKED&&(canDeleteAll||u.email.toLowerCase()===myEmail);
   return "<div class='pcard' data-fid='"+u.fileId+"'>"
     +"<div class='pimg"+(u.type==="video"?" vid":"")+"'><img alt='"+u.name+"'>"+owner+"</div>"
     +"<div class='pname'>"+u.name+"</div>"
@@ -1614,7 +1632,7 @@ const DEFAULT_FEEDBACK_DAYS={
 };
 
 let feedback={days:{}}, fbFileId=null, fbSel=isoOf(CAMP_DATES[todayCampIdx()]);
-const isFbAdmin=()=>isSuper||CONFIG.groupAdmins.some(e=>e.toLowerCase()===myEmail);
+const isFbAdmin=()=>isSuper||(!LOCKED&&CONFIG.groupAdmins.some(e=>e.toLowerCase()===myEmail));
 
 /* 아주 작은 마크다운 렌더러: ## 제목 / * 항목 / **굵게** */
 function fbRender(text){
@@ -1764,6 +1782,14 @@ function renderInterviews(){
   if(!ivSel){ctrl.style.display="none";return;}
   const iv=findIv(ivSel.team,ivSel.full);
   ctrl.style.display="flex";
+  if(LOCKED){
+    ctrl.innerHTML="<b>"+ivSel.full+"</b> <span style='color:var(--muted)'>· "+ivSel.team+
+      (iv?" · ✓ uploaded":" · 미업로드")+" · 🔒 read-only</span>"+
+      (iv?" <button class='mini' id='ivPlayBtn'>▶ Preview</button>":"");
+    if(iv)$("ivPlayBtn").addEventListener("click",()=>
+      window.open("https://drive.google.com/file/d/"+iv.id+"/view","_blank"));
+    return;
+  }
   ctrl.innerHTML="<b>"+ivSel.full+"</b> <span style='color:var(--muted)'>· "+ivSel.team+"</span>"+
     (iv
       ?" <span style='color:#1e7a46'>✓ uploaded ("+iv.name+")</span>"+
@@ -1786,6 +1812,7 @@ function renderInterviews(){
 }
 $("ivInput").addEventListener("change",async e=>{
   const f=e.target.files[0];e.target.value="";
+  if(LOCKED)return toast("🔒 2026 업로드가 마감되었습니다 (read-only)");
   if(!f||!ivSel)return;
   if(!isVideoFile(f))return toast("⚠ "+f.name+" is not a video file");
   if(findIv(ivSel.team,ivSel.full))return toast("⚠ Already uploaded — delete it first");
