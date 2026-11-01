@@ -283,7 +283,7 @@ const lc = s => String(s||'').trim().toLowerCase();
 const state = {
   user:null, data:null, loading:false, error:'', setup:false, denied:false,
   view: localStorage.getItem('hctpView') || 'check',
-  year:null, termId:null, classId:null, dateByClass:{}, ovClass:'all', rosterClass:null,
+  year:null, termId:null, classId:null, dateByClass:{}, ovClass:null, rosterClass:null,
   sync:'', menu:false,
 };
 
@@ -344,7 +344,11 @@ async function api(url, opts={}){
   if (!auth.token || Date.now() > auth.exp) { const e = new Error('Session expired'); e.expired = true; throw e; }
   const r = await fetch(url, {...opts, headers:{...(opts.headers||{}), Authorization:'Bearer '+auth.token}});
   if (r.status === 401) { auth.token=''; sessionStorage.removeItem('hctpTok'); const e = new Error('Session expired'); e.expired = true; throw e; }
-  if (!r.ok) { const e = new Error(`Google error ${r.status}`); e.status = r.status; throw e; }
+  if (!r.ok) {
+    let reason = '', detail = '';
+    try { const j = await r.json(); reason = j.error?.errors?.[0]?.reason || j.error?.status || ''; detail = j.error?.message || ''; } catch {}
+    const e = new Error(`Google error ${r.status}${detail ? ': ' + detail : ''}`); e.status = r.status; e.reason = reason; throw e;
+  }
   const txt = await r.text(); return txt ? JSON.parse(txt) : {};
 }
 const Store = DEMO ? {
@@ -410,17 +414,21 @@ window.addEventListener('beforeunload', e => { if (pending.length) { e.preventDe
    AUTH
    ===================================================================== */
 function gsiReady(cb){ if (window.google?.accounts?.oauth2) cb(); else setTimeout(() => gsiReady(cb), 150); }
-function signIn(){
+function signIn(forceConsent){
   gsiReady(() => {
     auth.client ||= google.accounts.oauth2.initTokenClient({ client_id:CONFIG.GOOGLE_CLIENT_ID, scope:SCOPES, callback:onToken });
-    auth.client.requestAccessToken({prompt: state.user ? '' : 'select_account'});
+    auth.client.requestAccessToken({prompt: forceConsent ? 'consent' : (state.user ? '' : 'select_account')});
   });
 }
 async function onToken(resp){
   if (resp.error) { toast('Sign-in cancelled'); return; }
+  if (google.accounts.oauth2.hasGrantedAllScopes && !google.accounts.oauth2.hasGrantedAllScopes(resp, 'https://www.googleapis.com/auth/drive')) {
+    toast('Please check the Google Drive box to continue');
+    setTimeout(() => auth.client.requestAccessToken({prompt:'consent'}), 1800); return;
+  }
   auth.token = resp.access_token; auth.exp = Date.now() + (resp.expires_in - 60) * 1000;
   sessionStorage.setItem('hctpTok', JSON.stringify({token:auth.token, exp:auth.exp}));
-  if (state.data && state.user) { setSync('saving'); flush(); return; } // re-auth mid-session
+  if (state.data && state.user && !state.error) { setSync('saving'); flush(); return; } // re-auth mid-session
   await afterAuth();
 }
 async function afterAuth(){
@@ -436,7 +444,8 @@ function signOut(){
   Object.assign(state, {user:null, data:null, error:'', setup:false, denied:false, menu:false}); render();
 }
 async function loadData(){
-  state.loading = true; state.error=''; state.setup=false; state.denied=false; render();
+  state.loading = true; state.error=''; state.setup=false; state.denied=false;
+  state.classId = null; state.rosterClass = null; state.ovClass = null; state.dateByClass = {}; render();
   try {
     if (!DEMO && !fileId()) {
       if (CONFIG.ADMINS.map(lc).includes(state.user.email)) state.setup = true;
@@ -447,9 +456,13 @@ async function loadData(){
       pickDefaults();
     }
   } catch (e) {
-    state.error = e.status === 404 || e.status === 403
-      ? 'Cannot open the attendance file. Ask the admin to share it with your Google account.'
-      : e.message;
+    state.errorKind = '';
+    if (e.status === 403 && /insufficient|scope|PERMISSION_DENIED/i.test(e.reason + e.message) && !/not.*shared|notFound/i.test(e.message)) {
+      state.errorKind = 'scope';
+      state.error = 'Google Drive access was not allowed. Tap “Sign in again” and check the Google Drive box on the consent screen.';
+    } else if (e.status === 404 || e.status === 403) {
+      state.error = `Cannot open the attendance file (${e.status}${e.reason ? ' · ' + e.reason : ''}). Ask the admin to share the “HCTP Attendance” folder with ${state.user.email}.`;
+    } else state.error = e.message;
   }
   state.loading = false; render();
 }
@@ -469,6 +482,12 @@ const isAdmin = () => !!state.user && (CONFIG.ADMINS.map(lc).includes(state.user
 const teacherName = email => state.data?.teachers.find(t => t.email === email)?.name || email || '—';
 const canEdit = c => !!state.user && (isAdmin() || c.teacher === state.user.email || (c.delegates||[]).includes(state.user.email));
 const isMain = c => isAdmin() || c.teacher === state.user?.email;
+/* my role in a class: 0 = main teacher, 1 = helper, 2 = other (admin view) */
+const roleRank = c => c.teacher === state.user?.email ? 0 : (c.delegates||[]).includes(state.user?.email) ? 1 : 2;
+const myClasses = t => t.classes.filter(canEdit).map((c,i) => [c,i]).sort((a,b) => roleRank(a[0]) - roleRank(b[0]) || a[1] - b[1]).map(x => x[0]);
+const byName = (a,b) => a.name.localeCompare(b.name, 'en', {sensitivity:'base'});
+/* alphabetical, withdrawn people listed last */
+const sortPeople = arr => [...arr].sort((a,b) => (a.withdrawn - b.withdrawn) || byName(a,b));
 
 function holidaysFor(term, c){ return term.holidays.filter(h => !h.classIds?.length || h.classIds.includes(c.id)); }
 const colCache = new Map();
@@ -605,7 +624,7 @@ function classStyle(c){ const [l,d] = COLORS[c.color] || COLORS.blue; return `--
 
 /* ---------- Check-in ---------- */
 function viewCheck(t){
-  const mine = t.classes.filter(canEdit);
+  const mine = myClasses(t);
   if (!mine.length) return `<div class="card"><h2>No class assigned</h2><p class="muted">You are not the teacher or helper of any ${esc(t.season)} ${t.year} class. You can still see every class in <a href="#" data-act="view" data-v="overview">Overview</a>.</p></div>`;
   const c = mine.find(x => x.id === state.classId) || mine[0]; state.classId = c.id;
   const cl = cols(t,c), sess = cl.filter(x => x.type==='session');
@@ -643,7 +662,7 @@ function viewCheck(t){
     return `<div class="prow ${k%2?'z2':'z1'}"><div class="pinfo"><div class="pname"><span class="num">${k}.</span>${esc(p.name)}</div><div class="pmeta">${pill}</div></div>
       <div class="yn"><button class="y ${v==='P'?'on':''}" data-act="mark" data-p="${p.id}" data-v="P" ${editable?'':'disabled'}>Yes</button><button class="n ${v==='A'?'on':''}" data-act="mark" data-p="${p.id}" data-v="A" ${editable?'':'disabled'}>No</button></div></div>`;
   };
-  const studs = c.students.filter(p => !p.withdrawn), tas = c.tas.filter(p => !p.withdrawn);
+  const studs = sortPeople(c.students.filter(p => !p.withdrawn)), tas = sortPeople(c.tas.filter(p => !p.withdrawn));
   return `${tabs}<div class="card" style="${classStyle(c)}">
     <div class="classhead"><span class="classdot" style="background:var(--zd)"></span><div style="flex:1"><b style="font-size:17px">${esc(c.name)}</b><div class="small muted">${esc(c.grades||'')} · ${c.kind==='summer'?'5-day summer week':c.sessions+' weeks'} · refund at ${c.minAttend}/${c.sessions}</div></div></div>
     <div class="weeknav">
@@ -666,6 +685,7 @@ const markOf2 = (c,p,d) => (c.att[p.id]||{})[d];
 /* ---------- Overview (all classes) ---------- */
 function viewOverview(t){
   if (!t.classes.length) return `<div class="card muted">No classes in this term yet.</div>`;
+  if (state.ovClass === null) { const own = t.classes.find(c => roleRank(c) < 2); state.ovClass = own ? own.id : 'all'; }
   const chips = `<div class="strip" style="padding-top:0;margin-bottom:8px"><button class="chip ${state.ovClass==='all'?'on':''}" data-act="ov" data-id="all">All classes</button>${t.classes.map(c => `<button class="chip ${state.ovClass===c.id?'on':''}" data-act="ov" data-id="${c.id}">${esc(c.name)}</button>`).join('')}</div>`;
   const list = state.ovClass === 'all' ? t.classes : t.classes.filter(c => c.id === state.ovClass);
   return `${chips}<div class="notice info rotate-hint" style="align-items:center;gap:8px">📱↻ Turn your phone sideways to see more weeks.</div>
@@ -699,10 +719,10 @@ function gridFor(t, c){
     return `<td class="wcol"></td>`;
   }).join('');
   let k = 0;
-  const sRows = c.students.map(p => { const s = stats(t,c,p); const z = p.withdrawn ? 'z1 wd' : (++k % 2 ? 'z1' : 'z2');
+  const sRows = sortPeople(c.students).map(p => { const s = stats(t,c,p); const z = p.withdrawn ? 'z1 wd' : (++k % 2 ? 'z1' : 'z2');
     return `<tr class="${z}"><td class="nm" title="${esc(p.name)}"><span class="n">${p.withdrawn?'–':k}</span>${esc(p.name)}</td>${cells(p,false,s)}<td class="ms st-${s.st}">${s.abs}</td><td class="rf st-${s.st}">${refundText(t,c,p,s)}</td></tr>`; }).join('');
   let j = 0;
-  const tRows = c.tas.map(p => { const s = stats(t,c,p); const z = p.withdrawn ? 'z1 wd' : (++j % 2 ? 'z1' : 'z2');
+  const tRows = sortPeople(c.tas).map(p => { const s = stats(t,c,p); const z = p.withdrawn ? 'z1 wd' : (++j % 2 ? 'z1' : 'z2');
     return `<tr class="${z}"><td class="nm" title="${esc(p.name)}"><span class="n">${p.withdrawn?'–':j}</span>${esc(p.name)}</td>${cells(p,true,s)}<td class="ms">${s.abs}</td><td class="rf">${s.pres}d</td></tr>`; }).join('');
   return `<div class="ovhead"><span class="classdot" style="${classStyle(c)};background:var(--zd)"></span><h3>${esc(c.name)} <span class="small muted">· ${esc(teacherName(c.teacher))}${isLocked(t,c)?' · 🔒':''}</span></h3><button class="btn sm light" data-act="csv" data-c="${c.id}">⬇ CSV</button></div>
     <div class="gridwrap"><table class="grid" style="${classStyle(c)}"><thead>${head}</thead><tbody>${sRows || `<tr class="z1"><td class="nm muted">No students</td>${cl.map(()=>'<td class="wcol"></td>').join('')}<td class="ms"></td><td class="rf"></td></tr>`}
@@ -712,17 +732,17 @@ function gridFor(t, c){
 
 /* ---------- Roster ---------- */
 function viewRoster(t){
-  const mine = t.classes.filter(canEdit);
+  const mine = myClasses(t);
   if (!mine.length) return `<div class="card"><h2>Roster</h2><p class="muted">Only the class teacher, helpers or an admin can edit a roster.</p></div>`;
   const c = mine.find(x => x.id === state.rosterClass) || mine.find(x => x.id === state.classId) || mine[0]; state.rosterClass = c.id;
   const locked = isLocked(t,c), dis = locked ? 'disabled' : '';
   const tabs = mine.length > 1 ? `<div class="strip" style="padding-top:0;margin-bottom:10px">${mine.map(x => `<button class="chip ${x.id===c.id?'on':''}" data-act="rcls" data-id="${x.id}">${esc(x.name)}</button>`).join('')}</div>` : '';
-  const sList = c.students.map(p => `<div class="li ${p.withdrawn?'wd':''}"><span class="nm">${esc(p.name)}</span>
+  const sList = sortPeople(c.students).map(p => `<div class="li ${p.withdrawn?'wd':''}"><span class="nm">${esc(p.name)}</span>
       <select data-chg="deposit" data-p="${p.id}" ${dis} aria-label="Deposit">${[0,50,100].map(v => `<option value="${v}" ${Number(p.deposit)===v?'selected':''}>${v?'$'+v:'$ –'}</option>`).join('')}</select>
       <button class="icon" data-act="rename" data-p="${p.id}" ${dis} title="Rename">✎</button>
       <button class="icon" data-act="withdraw" data-p="${p.id}" ${dis} title="${p.withdrawn?'Restore':'Withdraw (keep history)'}">${p.withdrawn?'↺':'⊘'}</button>
       <button class="icon del" data-act="delperson" data-p="${p.id}" ${dis} title="Delete">✕</button></div>`).join('') || '<p class="muted small">No students yet.</p>';
-  const tList = c.tas.map(p => `<div class="li ${p.withdrawn?'wd':''}"><span class="nm">${esc(p.name)} <span class="muted small">${esc(p.grade||'')}</span></span>
+  const tList = sortPeople(c.tas).map(p => `<div class="li ${p.withdrawn?'wd':''}"><span class="nm">${esc(p.name)} <span class="muted small">${esc(p.grade||'')}</span></span>
       <button class="icon" data-act="rename" data-p="${p.id}" ${dis} title="Rename">✎</button>
       <button class="icon" data-act="withdraw" data-p="${p.id}" ${dis} title="${p.withdrawn?'Restore':'Withdraw'}">${p.withdrawn?'↺':'⊘'}</button>
       <button class="icon del" data-act="delperson" data-p="${p.id}" ${dis} title="Delete">✕</button></div>`).join('') || '<p class="muted small">No TAs yet.</p>';
@@ -736,7 +756,9 @@ function viewRoster(t){
     <div class="list">${tList}</div>
     <div class="addrow"><input type="text" id="newTA" placeholder="TA full name" ${dis}><select class="in" id="newGrade" ${dis}>${['9th','10th','11th','12th'].map(g => `<option>${g}</option>`).join('')}</select><button class="btn" data-act="addta" ${dis}>Add</button></div></div>
   <div class="card"><h2>Teachers</h2>
-    <div class="list"><div class="li"><span class="nm">👑 ${esc(teacherName(c.teacher))}</span><span class="small muted">Main teacher</span></div>
+    <div class="list"><div class="li">${isAdmin()
+      ? `<span class="nm">👑 <select data-chg="mainteacher" style="max-width:70%"><option value="">— not assigned —</option>${state.data.teachers.map(x => `<option value="${esc(x.email)}" ${x.email===c.teacher?'selected':''}>${esc(x.name)}</option>`).join('')}</select></span>`
+      : `<span class="nm">👑 ${esc(teacherName(c.teacher))}</span>`}<span class="small muted">Main teacher</span></div>
     ${c.delegates.map(e => `<div class="li"><span class="nm">🤝 ${esc(teacherName(e))}</span><span class="small muted">Helper</span>${isMain(c)?`<button class="icon del" data-act="deldelegate" data-e="${esc(e)}">✕</button>`:''}</div>`).join('')}</div>
     ${isMain(c) ? `<div class="addrow"><select class="in" id="newDelegate" style="flex:1"><option value="">Choose a teacher who can check in for you…</option>${others.map(x => `<option value="${esc(x.email)}">${esc(x.name)}</option>`).join('')}</select><button class="btn" data-act="adddelegate">Add</button></div><p class="small muted">Helpers can take attendance and edit this roster when you are away.</p>` : ''}
   </div>`;
@@ -831,6 +853,7 @@ function renderSetup(){
 function renderBlocked(){
   app.innerHTML = `<div class="login"><div class="logo-chip">${LOGO_IMG}</div><h1>HCTP Attendance</h1>
     <div class="notice bad">${state.denied ? `<b>${esc(state.user.email)}</b> is not registered as a teacher.` : esc(state.error)}</div>
+    ${!DEMO && state.error ? `<button class="btn" data-act="reconsent" style="margin-bottom:10px">Sign in again (allow Google Drive)</button><br>` : ''}
     <button class="btn light" data-act="signout">Use another account</button></div>`;
 }
 
@@ -846,6 +869,7 @@ const val = id => ($('#'+id)?.value || '').trim();
 const ACT = {
   signin: () => signIn(),
   reauth: () => signIn(),
+  reconsent: () => { sessionStorage.removeItem('hctpTok'); auth.token = ''; signIn(true); },
   demologin: el => { state.user = {email:el.dataset.e, name:el.dataset.n}; localStorage.setItem('hctpDemoUser', JSON.stringify(state.user)); loadData(); },
   signout: () => { state.menu = false; signOut(); },
   createfile: () => createDataFile(),
@@ -853,7 +877,7 @@ const ACT = {
   closemenu: (el,e) => { if (e.target !== el) return; state.menu = false; render(); },
   refresh: () => { state.menu = false; refreshData(false); render(); },
   view: (el,e) => { e.preventDefault(); state.view = el.dataset.v; localStorage.setItem('hctpView', state.view); render(); scrollTo(0,0); },
-  term: el => { state.termId = el.dataset.id; state.classId = null; state.ovClass = 'all'; render(); },
+  term: el => { state.termId = el.dataset.id; state.classId = null; state.rosterClass = null; state.ovClass = null; render(); },
   cls: el => { state.classId = el.dataset.id; render(); },
   rcls: el => { state.rosterClass = el.dataset.id; render(); },
   ov: el => { state.ovClass = el.dataset.id; render(); },
@@ -946,6 +970,7 @@ const ACT = {
 };
 const CHG = {
   year: el => { state.year = Number(el.value); const t = termsOfYear(state.year).pop(); if (t) state.termId = t.id; render(); },
+  mainteacher: el => commit(opCls(state.rosterClass, x => { x.teacher = el.value; x.delegates = x.delegates.filter(d => d !== el.value); })),
   deposit: el => commit(opCls(state.rosterClass, x => { const q = x.students.find(y => y.id === el.dataset.p); if (q) q.deposit = Number(el.value); })),
   cf: el => {
     const f = el.dataset.f, v = el.value;
@@ -977,7 +1002,7 @@ function downloadCSV(t, c){
     return [role + (p.withdrawn?' (withdrawn)':''), k, p.name, role==='Student' ? (p.deposit||0) : '',
       ...cl.map(x => { if (x.type==='holiday') return ''; const v = markOf2(c,p,x.date); return v==='P' ? 'Yes' : v==='A' ? (role==='Student' ? s.absNo[x.date] : 'No') : ''; }),
       s.abs, role==='Student' ? refundText(t,c,p,s) : `${s.pres} days`]; };
-  const rows = [[`${c.name} ${t.season} ${t.year}`], head, ...c.students.map((p,i) => line(p,'Student',i+1)), [], ...c.tas.map((p,i) => line(p,'TA',i+1))];
+  const rows = [[`${c.name} ${t.season} ${t.year}`], head, ...sortPeople(c.students).map((p,i) => line(p,'Student',i+1)), [], ...sortPeople(c.tas).map((p,i) => line(p,'TA',i+1))];
   download(`${c.name.replace(/\W+/g,'_')}_${t.year}_${t.season.replace(/\W+/g,'')}.csv`, '﻿' + rows.map(r => r.map(q).join(',')).join('\r\n'), 'text/csv');
 }
 
