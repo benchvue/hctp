@@ -1,0 +1,1000 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<title>HCTP Attendance</title>
+<link rel="icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f3ec; --card:#ffffff; --ink:#1d2733; --muted:#6b7480; --line:#e6dfd2;
+  --brand:#1f5f8b; --brand-2:#e7f0f8; --brand-ink:#ffffff;
+  --g:#c9edcf; --g-ink:#1c6b33;           /* never missed */
+  --m:#e9f7d6; --m-ink:#3f6b1c;           /* missed, still fine */
+  --y:#ffe486; --y-ink:#6e5200;           /* one more = no refund */
+  --r:#ffb3b3; --r-ink:#9b1c1c;           /* no refund */
+  --o:#ffe7cf;                            /* early absence cell */
+  --hol:#f9d5df; --hol-ink:#9a3858;
+  --radius:16px; --shadow:0 1px 2px rgba(30,30,20,.06),0 4px 14px rgba(30,30,20,.06);
+  --nav-h:64px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Nunito,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--brand)}
+.hidden{display:none!important}
+
+/* ---------- header ---------- */
+header.top{position:sticky;top:0;z-index:30;background:rgba(246,243,236,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:calc(8px + env(safe-area-inset-top)) 14px 8px}
+.top-row{display:flex;align-items:center;gap:10px;max-width:980px;margin:0 auto}
+.top-row .logo{flex:none;background:#fff;border-radius:10px;padding:4px 8px;box-shadow:0 0 0 1px var(--line)}
+.top-row .logo img{display:block;height:28px;width:auto;max-width:110px}
+.brand{flex:1;min-width:0}
+.brand b{display:block;font-weight:900;font-size:17px;letter-spacing:.2px;line-height:1.1}
+.brand small{color:var(--muted);font-size:12px;font-weight:600}
+.brand b,.brand small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:430px){.brand small{display:none}}
+.sync{font-size:11px;font-weight:700;padding:4px 8px;border-radius:99px;background:#eee;color:var(--muted);white-space:nowrap}
+.sync.saving{background:#fff3c4;color:#7a5a00}.sync.saved{background:var(--g);color:var(--g-ink)}.sync.error{background:var(--r);color:var(--r-ink)}
+.me{width:34px;height:34px;border-radius:50%;border:0;background:var(--brand);color:#fff;font-weight:800}
+.termbar{display:flex;gap:6px;align-items:center;max-width:980px;margin:8px auto 0;overflow-x:auto;scrollbar-width:none}
+.termbar::-webkit-scrollbar{display:none}
+.termbar select{border:1px solid var(--line);background:#fff;border-radius:99px;padding:5px 10px;font-weight:800}
+.chip{border:1px solid var(--line);background:#fff;border-radius:99px;padding:6px 12px;font-weight:700;font-size:13px;white-space:nowrap}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip:disabled{opacity:.45}
+
+main{max-width:980px;margin:0 auto;padding:12px 12px calc(var(--nav-h) + 24px + env(safe-area-inset-bottom))}
+
+/* ---------- bottom nav ---------- */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:40;background:#fff;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+nav.tabs button{flex:1;border:0;background:none;height:var(--nav-h);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;font-weight:700;color:var(--muted)}
+nav.tabs button i{font-style:normal;font-size:20px;line-height:1}
+nav.tabs button.on{color:var(--brand)}
+nav.tabs button.on i{transform:scale(1.1)}
+
+/* ---------- cards ---------- */
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;margin-bottom:12px}
+.card h2{font-size:16px;margin:0 0 10px;font-weight:900;display:flex;align-items:center;gap:8px}
+.card h2 .count{font-size:12px;color:var(--muted);font-weight:700}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.spacer{flex:1}
+.btn{border:0;border-radius:12px;padding:10px 14px;font-weight:800;background:var(--brand);color:#fff}
+.btn.ghost{background:var(--brand-2);color:var(--brand)}
+.btn.light{background:#f1ede5;color:var(--ink)}
+.btn.danger{background:#fde2e2;color:var(--r-ink)}
+.btn.sm{padding:6px 10px;font-size:13px;border-radius:10px}
+.btn:disabled{opacity:.45}
+input[type=text],input[type=email],input[type=date],input[type=number],select.in{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 10px;min-width:0}
+.field{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:var(--muted)}
+.field>input,.field>select{font-size:15px;color:var(--ink);font-weight:600}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){.grid2{grid-template-columns:1fr}}
+.notice{border-radius:12px;padding:10px 12px;font-size:14px;font-weight:600;margin-bottom:12px}
+.notice.warn{background:#fff3c4;color:#6e5200}
+.notice.bad{background:#fde2e2;color:var(--r-ink)}
+.notice.info{background:var(--brand-2);color:var(--brand)}
+.notice.hol{background:var(--hol);color:var(--hol-ink)}
+
+/* ---------- check-in ---------- */
+.classhead{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.classdot{width:14px;height:14px;border-radius:50%;flex:none;border:1px solid rgba(0,0,0,.08)}
+.weeknav{display:flex;align-items:center;gap:8px}
+.weeknav .arrow{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:#fff;font-size:20px;font-weight:900}
+.weeknav .arrow:disabled{opacity:.3}
+.weeknav .mid{flex:1;text-align:center}
+.weeknav .mid b{display:block;font-size:18px;font-weight:900}
+.weeknav .mid>span{font-size:13px;color:var(--muted);font-weight:700}
+.badge{display:inline-block;font-size:11px;font-weight:800;padding:2px 8px;border-radius:99px;background:var(--brand);color:#fff;vertical-align:middle}
+.strip{display:flex;gap:6px;overflow-x:auto;padding:12px 2px 2px;scroll-snap-type:x proximity;scrollbar-width:none}
+.strip::-webkit-scrollbar{display:none}
+.wk{flex:none;scroll-snap-align:center;min-width:52px;border:1px solid var(--line);background:#fff;border-radius:12px;padding:5px 6px;text-align:center;font-weight:800;font-size:13px;line-height:1.15;position:relative}
+.wk small{display:block;font-size:10px;color:var(--muted);font-weight:700}
+.wk.on{border:2px solid var(--brand);background:var(--brand-2)}
+.wk.fut{opacity:.4}
+.wk.hol{background:var(--hol);color:var(--hol-ink);border-color:transparent}
+.wk.hol small{color:var(--hol-ink)}
+.wk .dot{position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%}
+.dot.done{background:#2fa84f}.dot.part{background:#f0a400}.dot.none{background:#e35b5b}
+.summary{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 8px}
+.summary span{font-size:13px;font-weight:800;padding:5px 10px;border-radius:99px;background:#fff;border:1px solid var(--line)}
+.plist{border-radius:14px;overflow:hidden;border:1px solid rgba(0,0,0,.05)}
+.plist .sec{font-size:12px;font-weight:900;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);background:#fbfaf6;padding:8px 12px}
+.prow{display:flex;align-items:center;gap:10px;padding:9px 10px 9px 12px;background:var(--zl)}
+.prow.z2{background:var(--zd)}
+.pinfo{flex:1;min-width:0}
+.pname{font-weight:800;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pname .num{color:var(--muted);font-weight:700;margin-right:4px;font-size:13px}
+.pmeta{display:flex;gap:6px;align-items:center;margin-top:3px;flex-wrap:wrap}
+.pill{font-size:11px;font-weight:800;padding:2px 8px;border-radius:99px}
+.pill.g{background:var(--g);color:var(--g-ink)}.pill.m{background:var(--m);color:var(--m-ink);border:1px solid #cfe8b4}
+.pill.y{background:var(--y);color:var(--y-ink)}.pill.r{background:var(--r);color:var(--r-ink)}
+.pill.n{background:rgba(255,255,255,.7);color:var(--muted)}
+.dep{font-size:11px;font-weight:800;color:var(--muted)}
+.yn{display:flex;gap:6px;flex:none}
+.yn button{width:58px;height:46px;border-radius:12px;border:2px solid rgba(0,0,0,.08);background:rgba(255,255,255,.85);font-weight:900;font-size:15px;color:#8a929b;transition:transform .08s}
+.yn button:active{transform:scale(.94)}
+.yn .y.on{background:#2fa84f;border-color:#2fa84f;color:#fff}
+.yn .n.on{background:#e35b5b;border-color:#e35b5b;color:#fff}
+.yn button:disabled{opacity:.5}
+.backfill{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+
+/* ---------- overview grid ---------- */
+.ovhead{display:flex;align-items:center;gap:8px;margin:4px 0 8px}
+.ovhead h3{margin:0;font-size:16px;font-weight:900;flex:1}
+.gridwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px;border:1px solid var(--line);background:#fff;margin-bottom:6px}
+table.grid{border-collapse:separate;border-spacing:0;font-size:13px;min-width:100%}
+.grid th,.grid td{border-bottom:1px solid rgba(0,0,0,.06);border-right:1px solid rgba(0,0,0,.05);text-align:center;padding:0;height:34px;white-space:nowrap}
+.grid thead th{background:#4a5563;color:#fff;font-weight:800;font-size:12px;line-height:1.1;height:40px;position:sticky;top:0}
+.grid thead th small{display:block;font-size:9px;font-weight:700;opacity:.8}
+.grid th.wcol,.grid td.wcol{width:40px;min-width:40px;max-width:40px}
+.grid .nm{position:sticky;left:0;z-index:2;text-align:left;padding:0 8px;width:132px;min-width:132px;max-width:132px;overflow:hidden;text-overflow:ellipsis;font-weight:700;box-shadow:2px 0 0 rgba(0,0,0,.06)}
+.grid thead .nm{z-index:4;background:#38414d}
+.grid .nm .n{color:var(--muted);font-weight:700;font-size:11px;margin-right:3px}
+.grid .ms,.grid .rf{position:sticky;z-index:2;font-weight:900}
+.grid .rf{right:0;width:56px;min-width:56px}
+.grid .ms{right:56px;width:44px;min-width:44px;box-shadow:-2px 0 0 rgba(0,0,0,.06)}
+.grid thead .ms,.grid thead .rf{z-index:4;background:#38414d}
+.grid tbody tr.z1 td{background:var(--zl)}
+.grid tbody tr.z2 td{background:var(--zd)}
+.grid tbody tr td.st-g{background:var(--g);color:var(--g-ink)}
+.grid tbody tr td.st-m{background:var(--m);color:var(--m-ink)}
+.grid tbody tr td.st-y{background:var(--y);color:var(--y-ink)}
+.grid tbody tr td.st-r{background:var(--r);color:var(--r-ink)}
+.grid tbody tr td.a-o{background:var(--o);color:#9a4a00;font-weight:900}
+.grid tbody tr td.a-y{background:var(--y);color:var(--y-ink);font-weight:900}
+.grid tbody tr td.a-r{background:var(--r);color:var(--r-ink);font-weight:900}
+.grid td.p{color:#1c7a3a;font-weight:900}
+.grid td.um{color:#c98a00;font-weight:900}
+.grid th.hol,.grid tbody tr td.hol{background:repeating-linear-gradient(135deg,var(--hol),var(--hol) 6px,#fbe3ea 6px,#fbe3ea 12px);color:var(--hol-ink)}
+.grid th.hol{color:var(--hol-ink)}
+.grid th.today{background:var(--brand)}
+.grid tr.tasep td{background:#f3f1ec!important;font-size:11px;font-weight:900;letter-spacing:.6px;color:var(--muted);height:24px;text-align:left;padding-left:8px}
+.grid tr.wd td{color:#9aa1a8;text-decoration:line-through}
+.grid td.tap{cursor:pointer}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12px;font-weight:700;color:var(--muted);margin:8px 2px 18px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:14px;height:14px;border-radius:4px;display:inline-block;border:1px solid rgba(0,0,0,.08)}
+.rotate-hint{display:none}
+@media (orientation:portrait) and (max-width:700px){.rotate-hint{display:flex}}
+
+/* landscape phones: maximise grid space */
+@media (orientation:landscape) and (max-height:520px){
+  :root{--nav-h:46px}
+  nav.tabs button{flex-direction:row;gap:6px;font-size:13px}
+  nav.tabs button i{font-size:16px}
+  header.top{position:static;padding-top:4px;padding-bottom:4px;display:flex;gap:10px;align-items:center;padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
+  .top-row{margin:0;flex:none;order:2}
+  .top-row .brand{display:none}
+  .top-row .logo{padding:2px 6px}
+  .top-row .logo img{height:22px}
+  .termbar{margin:0;flex:1;order:1}
+  main{padding-top:6px;max-width:none;padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right))}
+  main .gridwrap{max-height:calc(100dvh - var(--nav-h) - 96px)}
+  .ovhead{margin:0 0 4px}
+}
+.gridwrap{overflow:auto;max-height:72vh}
+
+/* ---------- roster/admin lists ---------- */
+.list .li{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+.list .li:last-child{border-bottom:0}
+.list .li .nm{flex:1;min-width:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.list .li.wd .nm{text-decoration:line-through;color:var(--muted)}
+.list .li select{padding:6px 6px;border-radius:8px;border:1px solid var(--line);background:#fff}
+.icon{border:0;background:#f1ede5;width:34px;height:34px;border-radius:10px;font-weight:900;flex:none}
+.icon.del{background:#fde2e2;color:var(--r-ink)}
+.addrow{display:flex;gap:6px;margin-top:10px}
+.addrow input[type=text]{flex:1}
+.ccard{border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;background:linear-gradient(90deg,var(--zd) 0 6px,#fff 6px)}
+.ccard h4{margin:0 0 8px;display:flex;gap:8px;align-items:center;font-size:15px}
+
+/* ---------- login ---------- */
+.login{max-width:420px;margin:0 auto;padding:40px 22px;text-align:center}
+.logo-chip{display:inline-block;background:#fff;border-radius:18px;padding:14px 22px;box-shadow:0 0 0 1px rgba(169,129,47,.35),0 18px 40px -16px rgba(90,70,30,.4)}
+.logo-chip img{display:block;width:min(280px,68vw);height:auto}
+.login h1{font-size:26px;font-weight:900;margin:14px 0 4px}
+.login p{color:var(--muted);font-weight:600;line-height:1.5}
+.gbtn{display:inline-flex;align-items:center;gap:10px;border:1px solid var(--line);background:#fff;border-radius:99px;padding:12px 22px;font-weight:800;font-size:16px;box-shadow:var(--shadow)}
+.gbtn b{color:#4285f4;font-size:18px}
+.demo{margin-top:22px;text-align:left;background:#fff;border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)}
+.demo button{display:block;width:100%;text-align:left;margin-top:8px}
+footer{text-align:center;font-size:11px;letter-spacing:1px;color:var(--muted);padding:10px 0 4px;font-weight:700}
+
+#toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + 16px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-weight:700;font-size:14px;opacity:0;pointer-events:none;transition:.2s;z-index:99;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.menu{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.25);display:flex;align-items:flex-start;justify-content:flex-end;padding:60px 12px}
+.menu>div{background:#fff;border-radius:14px;box-shadow:var(--shadow);padding:12px;min-width:220px}
+.menu a,.menu button{display:block;width:100%;text-align:left;border:0;background:none;padding:10px 6px;font-weight:700;text-decoration:none;color:var(--ink);border-radius:8px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast"></div>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+/* =====================================================================
+   HCTP Attendance — CONFIG
+   ---------------------------------------------------------------------
+   GOOGLE_CLIENT_ID : same OAuth client ID used by upload.html
+   DATA_FILE_ID     : Google Drive file ID of hctp-attendance.json
+                      (an admin can create it from the app's setup screen;
+                       share it with every teacher as "Editor")
+   ADMINS           : Google accounts with admin rights
+   TEACHERS         : same registered teachers as upload.html
+                      (admins can also add/remove teachers inside the app)
+   Leave GOOGLE_CLIENT_ID empty (or open with ?demo) to run in DEMO mode:
+   data is saved only in this browser.
+   ===================================================================== */
+const CONFIG = {
+  GOOGLE_CLIENT_ID: "1075824030904-483gk6d1pa361u0ink9v55o0m572rnej.apps.googleusercontent.com",
+  DATA_FILE_ID: "",
+  ADMINS: [ "benchvue101@gmail.com" ],
+  TEACHERS: [   /* same as upload.html */
+    { name:"Hae-young Chun", email:"hyc333@gmail.com" },
+    { name:"Henry Hongsok",  email:"hongskwon@gmail.com" },
+    { name:"Ellen Lee",      email:"sjsend@hotmail.com" },
+    { name:"Jongbin Ym",     email:"benchvue101@gmail.com" },
+    { name:"Mihee Kang",     email:"mihekang@gmail.com" },
+    { name:"Kyungchul Lee",  email:"kcsend@gmail.com" },
+  ],
+  SITE_URL: "index.html",
+  UPLOAD_URL: "upload.html",
+};
+
+/* ===================================================================== */
+const QS = new URLSearchParams(location.search);
+const LOGO_IMG = `<img src="logo.png" alt="HCTP — Hanaim Community Tutorial Program" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://images.squarespace-cdn.com/content/v1/626092d011af024c5f0cadd1/92a00eee-d461-4847-ad26-a0ae4c5abec8/HCTP-LOGO-LAND-03.png?format=1500w';}else{this.style.display='none';}">`;
+const DEMO = !CONFIG.GOOGLE_CLIENT_ID || QS.has('demo');
+const SCOPES = 'openid email profile https://www.googleapis.com/auth/drive';
+const SEASONS = ['Spring','Summer','Fall/Winter'];
+const COLORS = {
+  yellow:['#fffbe0','#fcefa4'], green:['#eefbe2','#d2f1ab'], pink:['#fdeaf5','#f6cde6'],
+  blue:['#e8f3fc','#c9e1f6'], purple:['#f2ebfc','#dccff6'], orange:['#fff2e3','#ffdab4'], teal:['#e3f7f3','#bce9e0']
+};
+const DURATIONS = { '8':{kind:'sunday',sessions:8,min:6}, '10':{kind:'sunday',sessions:10,min:8}, '12':{kind:'sunday',sessions:12,min:10}, 'summer':{kind:'summer',sessions:5,min:4} };
+
+/* ---------- dates ---------- */
+const pad = n => String(n).padStart(2,'0');
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parse = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d); };
+const TODAY = /^\d{4}-\d{2}-\d{2}$/.test(QS.get('today')||'') ? QS.get('today') : iso(new Date());
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const md = s => { const d = parse(s); return `${d.getMonth()+1}/${d.getDate()}`; };
+const longDate = s => { const d = parse(s); return `${DOW[d.getDay()]}, ${MON[d.getMonth()]} ${d.getDate()}`; };
+const fullDate = s => { const d = parse(s); return `${MON[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`; };
+const addDays = (s,n) => { const d = parse(s); d.setDate(d.getDate()+n); return iso(d); };
+
+/* ---------- utils ---------- */
+const uid = () => Math.random().toString(36).slice(2,9);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $ = s => document.querySelector(s);
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove('show'), 2200); }
+const lc = s => String(s||'').trim().toLowerCase();
+
+/* ---------- state ---------- */
+const state = {
+  user:null, data:null, loading:false, error:'', setup:false, denied:false,
+  view: localStorage.getItem('hctpView') || 'check',
+  year:null, termId:null, classId:null, dateByClass:{}, ovClass:'all', rosterClass:null,
+  sync:'', menu:false,
+};
+
+/* =====================================================================
+   SEED — Fall 2026 classes & rosters
+   ===================================================================== */
+function seed(demo){
+  const S = (name, deposit=0) => ({id:uid(), name, deposit, withdrawn:false});
+  const T = (name, grade='') => ({id:uid(), name, grade, withdrawn:false});
+  const teachers = demo ? [
+    {email:'admin@hctp.demo', name:'Admin'},
+    {email:'codebridge@hctp.demo', name:'CodeBridge Teacher'},
+    {email:'math@hctp.demo', name:'Math Teacher'},
+    {email:'robotics@hctp.demo', name:'Robotics Teacher'},
+  ] : CONFIG.TEACHERS.map(t => ({email:lc(t.email), name:t.name||t.email}));
+  const cls = (name, grades, color, dur, start, teacher, students, tas) => ({
+    id:uid(), name, grades, color, kind:DURATIONS[dur].kind, sessions:DURATIONS[dur].sessions, minAttend:DURATIONS[dur].min,
+    start, teacher: demo ? teacher : '', delegates:[], unlockUntil:'', students, tas, att:{}
+  });
+  const classes = [
+    cls('CodeBridge','Grades 4–5','yellow','8','2026-10-25','codebridge@hctp.demo',
+      [S('Akash Deepak',100),S('Joseph Sargenti'),S('Noelle Sanchez'),S('Samuel Kwon'),S('Jenna Eldalash'),S('Cataleya Lopez')],
+      [T('Dylan Gallant','11th'),T('Angadveer Asija','11th'),T('Louie Kim','9th'),T('Kaavish Deepan Gangar','11th')]),
+    cls('Math Tutoring','Grades 1–3','green','12','2026-10-25','math@hctp.demo',
+      [S('Ali Eldalash'),S('Leah Deepak',100),S('Omar Habash'),S('Adalay Lopez'),S('Dante Sabanadze',50),S('Elijah Jones',100),
+       S('Joseph Lucero',100),S('Journee Caldwell',100),S('Liana Zegarra'),S('Layla Eldalash'),S('Zachary Nathan Montalvo',100)],
+      [T('Angelina Azmy','10th'),T('Samantha Lee','9th'),T('Ethan Chung','9th'),T('Lucas Chong','9th'),T('Valentina Choi','12th')]),
+    cls('Robotics with mBot2','Grades 6–8','pink','12','2026-10-25','robotics@hctp.demo',
+      [S('Arber Laska',50),S('Hellen Chafla'),S('Luka Sabanadze',50),S('Mattia Rusca',100),S('Andrew Skirpan'),S('Brian Laska')],
+      [T('Moses Kin','11th')]),
+  ];
+  const term = { id:'2026-fall', year:2026, season:'Fall/Winter', holidays:[
+    {id:uid(), date:'2026-11-29', label:'Thanksgiving', classIds:[]},
+    {id:uid(), date:'2026-12-27', label:'Christmas', classIds:[]},
+    {id:uid(), date:'2027-01-17', label:'MLK Day', classIds:[]},
+  ], classes };
+  if (demo) { // sample: week 1 already entered, so colors show up
+    const absent = ['Omar Habash','Hellen Chafla','Louie Kim'];
+    classes.forEach(c => [...c.students, ...c.tas].forEach(p => { c.att[p.id] = {'2026-10-25': absent.includes(p.name) ? 'A' : 'P'}; }));
+  }
+  return { version:1, admins: demo ? ['admin@hctp.demo'] : [], teachers, terms:[term], updatedAt:new Date().toISOString() };
+}
+function normalize(d){
+  d.admins ||= []; d.teachers ||= []; d.terms ||= [];
+  d.terms.forEach(t => { t.holidays ||= []; t.classes ||= []; t.classes.forEach(c => {
+    c.students ||= []; c.tas ||= []; c.att ||= {}; c.delegates ||= []; c.minAttend ??= Math.max(0,(c.sessions||8)-2);
+  }); });
+  return d;
+}
+
+/* =====================================================================
+   STORAGE — Google Drive JSON file (or localStorage in demo mode)
+   ===================================================================== */
+const auth = { token:'', exp:0, client:null };
+const fileId = () => CONFIG.DATA_FILE_ID || localStorage.getItem('hctpDataFileId') || '';
+
+async function api(url, opts={}){
+  if (!auth.token || Date.now() > auth.exp) { const e = new Error('Session expired'); e.expired = true; throw e; }
+  const r = await fetch(url, {...opts, headers:{...(opts.headers||{}), Authorization:'Bearer '+auth.token}});
+  if (r.status === 401) { auth.token=''; sessionStorage.removeItem('hctpTok'); const e = new Error('Session expired'); e.expired = true; throw e; }
+  if (!r.ok) { const e = new Error(`Google error ${r.status}`); e.status = r.status; throw e; }
+  const txt = await r.text(); return txt ? JSON.parse(txt) : {};
+}
+const Store = DEMO ? {
+  async load(){ let raw = localStorage.getItem('hctpDemoData'); if (!raw) { raw = JSON.stringify(seed(true)); localStorage.setItem('hctpDemoData', raw); } return normalize(JSON.parse(raw)); },
+  async save(d){ localStorage.setItem('hctpDemoData', JSON.stringify(d)); },
+} : {
+  async load(){ return normalize(await api(`https://www.googleapis.com/drive/v3/files/${fileId()}?alt=media&supportsAllDrives=true&_=${Date.now()}`)); },
+  async save(d){ await api(`https://www.googleapis.com/upload/drive/v3/files/${fileId()}?uploadType=media&supportsAllDrives=true`,
+    {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d)}); },
+  async create(d){
+    const b = 'hctp'+Date.now();
+    const body = `--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({name:'hctp-attendance.json',mimeType:'application/json'})}\r\n--${b}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(d)}\r\n--${b}--`;
+    const r = await api('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {method:'POST', headers:{'Content-Type':`multipart/related; boundary=${b}`}, body});
+    return r.id;
+  }
+};
+
+/* ----- write queue: apply locally at once, then merge into the latest file ----- */
+let pending = [], flushing = false, flushTimer = null;
+function commit(op){
+  op(state.data); render();
+  pending.push(op); setSync('saving');
+  clearTimeout(flushTimer); flushTimer = setTimeout(flush, 600);
+}
+async function flush(){
+  if (flushing) { flushTimer = setTimeout(flush, 400); return; }
+  if (!pending.length) return;
+  flushing = true; const ops = pending; pending = [];
+  try {
+    const fresh = await Store.load();
+    ops.forEach(o => o(fresh));
+    fresh.updatedAt = new Date().toISOString(); fresh.updatedBy = state.user.email;
+    await Store.save(fresh);
+    pending.forEach(o => o(fresh));
+    const changed = JSON.stringify(fresh.terms) !== JSON.stringify(state.data.terms) || JSON.stringify(fresh.teachers) !== JSON.stringify(state.data.teachers);
+    state.data = fresh; setSync('saved');
+    if (changed && !isTyping()) render();
+  } catch (e) {
+    pending = ops.concat(pending);
+    setSync(e.expired ? 'expired' : 'error');
+    toast(e.expired ? 'Sign-in expired — tap the red badge to sign in again' : 'Could not save — will retry');
+    if (!e.expired) flushTimer = setTimeout(flush, 5000);
+  }
+  flushing = false;
+}
+function setSync(s){ state.sync = s; const el = $('#sync'); if (el) { el.className = 'sync ' + s; el.textContent = syncLabel(); } }
+const syncLabel = () => ({saving:'Saving…', saved:'Saved ✓', error:'Retrying…', expired:'Sign in ⟳'}[state.sync] || (DEMO ? 'Demo' : 'Synced'));
+const isTyping = () => { const a = document.activeElement; return a && /INPUT|SELECT|TEXTAREA/.test(a.tagName); };
+
+async function refreshData(quiet){
+  if (pending.length || flushing) return;
+  try {
+    const fresh = await Store.load();
+    if (JSON.stringify(fresh) !== JSON.stringify(state.data)) { state.data = fresh; if (!isTyping()) render(); }
+    if (!quiet) toast('Up to date');
+  } catch (e) { if (!quiet) toast(e.message); }
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && state.data) refreshData(true); });
+setInterval(() => { if (!document.hidden && state.data) refreshData(true); }, 60000);
+window.addEventListener('beforeunload', e => { if (pending.length) { e.preventDefault(); e.returnValue = ''; } });
+
+/* =====================================================================
+   AUTH
+   ===================================================================== */
+function gsiReady(cb){ if (window.google?.accounts?.oauth2) cb(); else setTimeout(() => gsiReady(cb), 150); }
+function signIn(){
+  gsiReady(() => {
+    auth.client ||= google.accounts.oauth2.initTokenClient({ client_id:CONFIG.GOOGLE_CLIENT_ID, scope:SCOPES, callback:onToken });
+    auth.client.requestAccessToken({prompt: state.user ? '' : 'select_account'});
+  });
+}
+async function onToken(resp){
+  if (resp.error) { toast('Sign-in cancelled'); return; }
+  auth.token = resp.access_token; auth.exp = Date.now() + (resp.expires_in - 60) * 1000;
+  sessionStorage.setItem('hctpTok', JSON.stringify({token:auth.token, exp:auth.exp}));
+  if (state.data && state.user) { setSync('saving'); flush(); return; } // re-auth mid-session
+  await afterAuth();
+}
+async function afterAuth(){
+  try {
+    const u = await api('https://www.googleapis.com/oauth2/v3/userinfo');
+    state.user = { email:lc(u.email), name:u.name || u.email };
+    await loadData();
+  } catch (e) { auth.token=''; sessionStorage.removeItem('hctpTok'); state.user=null; render(); }
+}
+function signOut(){
+  if (!DEMO && auth.token && window.google?.accounts?.oauth2) google.accounts.oauth2.revoke(auth.token, ()=>{});
+  auth.token=''; sessionStorage.removeItem('hctpTok'); localStorage.removeItem('hctpDemoUser');
+  Object.assign(state, {user:null, data:null, error:'', setup:false, denied:false, menu:false}); render();
+}
+async function loadData(){
+  state.loading = true; state.error=''; state.setup=false; state.denied=false; render();
+  try {
+    if (!DEMO && !fileId()) {
+      if (CONFIG.ADMINS.map(lc).includes(state.user.email)) state.setup = true;
+      else state.error = 'The attendance file is not set up yet. Please ask the admin.';
+    } else {
+      state.data = await Store.load();
+      if (!isAdmin() && !state.data.teachers.some(t => t.email === state.user.email)) state.denied = true;
+      pickDefaults();
+    }
+  } catch (e) {
+    state.error = e.status === 404 || e.status === 403
+      ? 'Cannot open the attendance file. Ask the admin to share it with your Google account.'
+      : e.message;
+  }
+  state.loading = false; render();
+}
+async function createDataFile(){
+  try {
+    const id = await Store.create(seed(false));
+    localStorage.setItem('hctpDataFileId', id);
+    alert(`Attendance file created in your Google Drive.\n\nFile ID:\n${id}\n\n1) Paste this ID into CONFIG.DATA_FILE_ID in attendance.html\n2) Share "hctp-attendance.json" with every teacher as Editor.`);
+    await loadData();
+  } catch (e) { toast(e.message); }
+}
+
+/* =====================================================================
+   DOMAIN
+   ===================================================================== */
+const isAdmin = () => !!state.user && (CONFIG.ADMINS.map(lc).includes(state.user.email) || (state.data?.admins||[]).includes(state.user.email));
+const teacherName = email => state.data?.teachers.find(t => t.email === email)?.name || email || '—';
+const canEdit = c => !!state.user && (isAdmin() || c.teacher === state.user.email || (c.delegates||[]).includes(state.user.email));
+const isMain = c => isAdmin() || c.teacher === state.user?.email;
+
+function holidaysFor(term, c){ return term.holidays.filter(h => !h.classIds?.length || h.classIds.includes(c.id)); }
+const colCache = new Map();
+function cols(term, c){
+  const key = JSON.stringify([c.start, c.kind, c.sessions, holidaysFor(term,c).map(h=>h.date+h.label)]);
+  if (colCache.has(key)) return colCache.get(key);
+  const hol = new Map(holidaysFor(term,c).map(h => [h.date, h.label]));
+  const out = []; let d = c.start, n = 0, guard = 0;
+  if (!d) return out;
+  while (n < c.sessions && guard++ < 500) {
+    const dow = parse(d).getDay();
+    if (c.kind === 'summer' && (dow === 0 || dow === 6)) { /* weekend */ }
+    else if (hol.has(d)) out.push({date:d, type:'holiday', label:hol.get(d)});
+    else out.push({date:d, type:'session', n:++n});
+    d = addDays(d, c.kind === 'summer' ? 1 : 7);
+  }
+  colCache.set(key, out); return out;
+}
+const sessionsOf = (term,c) => cols(term,c).filter(x => x.type === 'session');
+const lastDate = (term,c) => { const s = sessionsOf(term,c); return s.length ? s[s.length-1].date : c.start; };
+const isLocked = (term,c) => !isAdmin() && TODAY > lastDate(term,c) && !(c.unlockUntil && TODAY <= c.unlockUntil);
+const maxAbsences = c => Math.max(0, c.sessions - c.minAttend);
+
+function stats(term, c, p){
+  const a = c.att[p.id] || {}; let abs=0, pres=0, unm=0; const absNo = {};
+  for (const s of sessionsOf(term,c)) {
+    const v = a[s.date];
+    if (v === 'A') absNo[s.date] = ++abs; else if (v === 'P') pres++; else if (s.date <= TODAY) unm++;
+  }
+  const max = maxAbsences(c);
+  const st = abs === 0 ? 'g' : abs > max ? 'r' : abs === max ? 'y' : 'm';
+  return {abs, pres, unm, absNo, max, st};
+}
+function statusText(c, s, short){
+  if (s.st === 'g') return short ? 'OK' : 'No absences';
+  if (s.st === 'm') return short ? 'OK' : `${s.abs} missed · ok`;
+  if (s.st === 'y') return short ? 'Risk' : `${s.abs} missed · 1 more = no refund`;
+  return short ? 'No' : `${s.abs} missed · no refund`;
+}
+function refundText(term, c, p, s){
+  if (!p.deposit) return '—';
+  if (s.st === 'r') return 'No';
+  if (TODAY >= lastDate(term,c) && s.unm === 0) return 'Yes';
+  return s.st === 'y' ? 'Risk' : 'OK';
+}
+function termRange(t){
+  const starts = t.classes.map(c => c.start).filter(Boolean).sort();
+  const ends = t.classes.map(c => lastDate(t,c)).filter(Boolean).sort();
+  return [starts[0] || `${t.year}-01-01`, ends[ends.length-1] || `${t.year}-12-31`];
+}
+function visibleYears(){
+  const ys = [...new Set(state.data.terms.map(t => t.year))].sort();
+  const cy = Number(TODAY.slice(0,4));
+  const v = isAdmin() ? ys : ys.filter(y => y <= cy);
+  return v.length ? v : ys;
+}
+const seasonOrder = t => SEASONS.indexOf(t.season);
+const termsOfYear = y => state.data.terms.filter(t => t.year === y).sort((a,b) => seasonOrder(a) - seasonOrder(b));
+const curTerm = () => state.data.terms.find(t => t.id === state.termId) || null;
+function pickDefaults(){
+  const d = state.data; if (!d.terms.length) return;
+  if (!curTerm()) {
+    const visible = d.terms.filter(t => visibleYears().includes(t.year));
+    const active = visible.find(t => { const [a,b] = termRange(t); return TODAY >= addDays(a,-14) && TODAY <= addDays(b,7); });
+    const recent = visible.filter(t => termRange(t)[0] <= TODAY).sort((a,b) => termRange(b)[0].localeCompare(termRange(a)[0]))[0];
+    const t = active || recent || visible[0] || d.terms[0];
+    state.termId = t.id; state.year = t.year;
+  }
+  const t = curTerm(); state.year = t.year;
+  if (!isAdmin() && !t.classes.some(canEdit) && state.view === 'check') {/* stays; view explains */}
+}
+function findCls(d, tid, cid){ return d.terms.find(t => t.id === tid)?.classes.find(c => c.id === cid); }
+function defaultDate(term, c){
+  const sess = sessionsOf(term,c); if (!sess.length) return null;
+  const saved = state.dateByClass[c.id];
+  if (saved && sess.some(s => s.date === saved) && saved <= TODAY) return saved;
+  const past = sess.filter(s => s.date <= TODAY);
+  return (past[past.length-1] || sess[0]).date;
+}
+
+/* =====================================================================
+   RENDER
+   ===================================================================== */
+const app = $('#app');
+function render(){
+  if (!state.user) return renderLogin();
+  if (state.loading) { app.innerHTML = `<div class="login"><div class="logo-chip">${LOGO_IMG}</div><p>Loading attendance…</p></div>`; return; }
+  if (state.setup) return renderSetup();
+  if (state.error || state.denied) return renderBlocked();
+  if (!state.data.terms.length && !isAdmin()) { state.error = 'No classes have been set up yet.'; return renderBlocked(); }
+  if (state.view === 'admin' && !isAdmin()) state.view = 'check';
+  const t = curTerm();
+  let body = '';
+  if (!t) body = `<div class="card"><h2>Welcome</h2><p class="muted">No term yet. Create one in Admin.</p></div>`;
+  else if (state.view === 'check') body = viewCheck(t);
+  else if (state.view === 'overview') body = viewOverview(t);
+  else if (state.view === 'roster') body = viewRoster(t);
+  if (state.view === 'admin') body = viewAdmin(t);
+  app.innerHTML = header(t) + `<main>${body}<footer>© HCTP · HANAIM CHURCH, ELMWOOD PARK NJ</footer></main>` + navTabs() + (state.menu ? userMenu() : '');
+  const on = app.querySelector('.wk.on'); if (on) on.scrollIntoView({inline:'center', block:'nearest'});
+}
+
+function header(t){
+  const years = visibleYears();
+  const yearCtl = years.length > 1
+    ? `<select data-chg="year">${years.map(y => `<option ${y===state.year?'selected':''}>${y}</option>`).join('')}</select>`
+    : `<span class="chip on" style="background:#fff;color:var(--ink);border-color:var(--line)">${state.year ?? ''}</span>`;
+  const seasons = SEASONS.map(s => {
+    const term = termsOfYear(state.year).find(x => x.season === s);
+    return `<button class="chip ${term && term.id===state.termId?'on':''}" ${term?`data-act="term" data-id="${term.id}"`:'disabled'}>${s}</button>`;
+  }).join('');
+  return `<header class="top"><div class="top-row">
+    <span class="logo">${LOGO_IMG}</span>
+    <div class="brand"><b>Attendance</b><small>Hanaim Community Tutorial Program</small></div>
+    <span id="sync" class="sync ${state.sync}" ${state.sync==='expired'?'data-act="reauth"':''}>${syncLabel()}</span>
+    <button class="me" data-act="menu" title="${esc(state.user.email)}">${esc((state.user.name||'?').trim()[0].toUpperCase())}</button>
+  </div><div class="termbar">${yearCtl}${seasons}</div></header>`;
+}
+function navTabs(){
+  const tabs = [['check','✓','Check-in'],['overview','▦','Overview'],['roster','👥','Roster']];
+  if (isAdmin()) tabs.push(['admin','⚙','Admin']);
+  return `<nav class="tabs">${tabs.map(([k,i,l]) => `<button class="${state.view===k?'on':''}" data-act="view" data-v="${k}"><i>${i}</i>${l}</button>`).join('')}</nav>`;
+}
+function userMenu(){
+  return `<div class="menu" data-act="closemenu"><div>
+    <div style="padding:6px 6px 10px;border-bottom:1px solid var(--line);margin-bottom:6px"><b>${esc(state.user.name)}</b><br><span class="small muted">${esc(state.user.email)}${isAdmin()?' · Admin':''}</span></div>
+    <button data-act="refresh">↻ Refresh data</button>
+    <a href="${CONFIG.SITE_URL}">🏠 View site</a>
+    <a href="${CONFIG.UPLOAD_URL}">⬆ Upload photos</a>
+    <button data-act="signout">⎋ Sign out</button>
+  </div></div>`;
+}
+function classStyle(c){ const [l,d] = COLORS[c.color] || COLORS.blue; return `--zl:${l};--zd:${d}`; }
+
+/* ---------- Check-in ---------- */
+function viewCheck(t){
+  const mine = t.classes.filter(canEdit);
+  if (!mine.length) return `<div class="card"><h2>No class assigned</h2><p class="muted">You are not the teacher or helper of any ${esc(t.season)} ${t.year} class. You can still see every class in <a href="#" data-act="view" data-v="overview">Overview</a>.</p></div>`;
+  const c = mine.find(x => x.id === state.classId) || mine[0]; state.classId = c.id;
+  const cl = cols(t,c), sess = cl.filter(x => x.type==='session');
+  const date = defaultDate(t,c); state.dateByClass[c.id] = date;
+  const cur = sess.find(s => s.date === date);
+  const i = sess.indexOf(cur), prev = sess[i-1], next = sess[i+1];
+  const locked = isLocked(t,c), notYet = date > TODAY, editable = !locked && !notYet;
+  const people = [...c.students, ...c.tas].filter(p => !p.withdrawn);
+  const markOf = p => (c.att[p.id]||{})[date];
+  const nP = people.filter(p => markOf(p)==='P').length, nA = people.filter(p => markOf(p)==='A').length, nU = people.length - nP - nA;
+
+  const tabs = mine.length > 1 ? `<div class="strip" style="padding-top:0;margin-bottom:10px">${mine.map(x => `<button class="chip ${x.id===c.id?'on':''}" data-act="cls" data-id="${x.id}">${esc(x.name)}</button>`).join('')}</div>` : '';
+  const strip = cl.map(x => {
+    if (x.type === 'holiday') return `<div class="wk hol">${md(x.date)}<small>${esc(x.label)}</small></div>`;
+    const fut = x.date > TODAY, marked = people.filter(p => markOf2(c,p,x.date)).length;
+    const dot = fut || !people.length ? '' : `<span class="dot ${marked===people.length?'done':marked?'part':'none'}"></span>`;
+    return `<button class="wk ${x.date===date?'on':''} ${fut?'fut':''}" ${fut?'disabled':`data-act="date" data-d="${x.date}"`}>${dot}${md(x.date)}<small>W${x.n}</small></button>`;
+  }).join('');
+
+  const missing = sess.filter(s => s.date < date && s.date <= TODAY && people.some(p => !markOf2(c,p,s.date)));
+  const nextCol = cl.find(x => x.date > date);
+  const holNote = nextCol && nextCol.type==='holiday' && date === (sess.filter(s=>s.date<=TODAY).pop()||{}).date
+    ? `<div class="notice hol">No class on ${longDate(nextCol.date)} — ${esc(nextCol.label)}.</div>` : '';
+
+  let note = '';
+  if (locked) note = `<div class="notice bad">🔒 This class ended on ${fullDate(lastDate(t,c))}. Attendance is locked because refunds have been decided. Please ask an admin if a change is really needed.</div>`;
+  else if (notYet) note = `<div class="notice info">This class starts on ${longDate(sess[0].date)}. You can check attendance on class day.</div>`;
+  else if (TODAY > lastDate(t,c) && isAdmin()) note = `<div class="notice warn">Class has ended — you are editing as admin.</div>`;
+  if (!locked && missing.length) note += `<div class="notice warn">Not finished: ${missing.map(s => `<button class="chip" data-act="date" data-d="${s.date}">${md(s.date)} · W${s.n}</button>`).join(' ')}</div>`;
+
+  const row = (p, k, isTA) => {
+    const v = markOf(p), s = stats(t,c,p);
+    const pill = isTA ? `<span class="pill n">${s.pres} day${s.pres===1?'':'s'}${p.grade?' · '+esc(p.grade):''}</span>`
+      : `<span class="pill ${s.st}">${statusText(c,s)}</span>${p.deposit?`<span class="dep">$${p.deposit} deposit</span>`:''}`;
+    return `<div class="prow ${k%2?'z2':'z1'}"><div class="pinfo"><div class="pname"><span class="num">${k}.</span>${esc(p.name)}</div><div class="pmeta">${pill}</div></div>
+      <div class="yn"><button class="y ${v==='P'?'on':''}" data-act="mark" data-p="${p.id}" data-v="P" ${editable?'':'disabled'}>Yes</button><button class="n ${v==='A'?'on':''}" data-act="mark" data-p="${p.id}" data-v="A" ${editable?'':'disabled'}>No</button></div></div>`;
+  };
+  const studs = c.students.filter(p => !p.withdrawn), tas = c.tas.filter(p => !p.withdrawn);
+  return `${tabs}<div class="card" style="${classStyle(c)}">
+    <div class="classhead"><span class="classdot" style="background:var(--zd)"></span><div style="flex:1"><b style="font-size:17px">${esc(c.name)}</b><div class="small muted">${esc(c.grades||'')} · ${c.kind==='summer'?'5-day summer week':c.sessions+' weeks'} · refund at ${c.minAttend}/${c.sessions}</div></div></div>
+    <div class="weeknav">
+      <button class="arrow" ${prev?`data-act="date" data-d="${prev.date}"`:'disabled'} aria-label="Previous week">‹</button>
+      <div class="mid"><b>${longDate(date)} ${date===TODAY?'<span class="badge">Today</span>':''}</b><span>Week ${cur?.n||1} of ${c.sessions}</span></div>
+      <button class="arrow" ${next && next.date<=TODAY?`data-act="date" data-d="${next.date}"`:'disabled'} aria-label="Next week">›</button>
+    </div>
+    <div class="strip">${strip}</div>
+  </div>
+  ${holNote}${note}
+  <div class="summary"><span style="color:#1c7a3a">✓ ${nP} present</span><span style="color:#c0392b">✗ ${nA} absent</span><span class="muted">${nU} not marked</span><span class="spacer" style="border:0;background:none"></span>
+  ${editable && nU ? `<button class="btn sm" data-act="allpresent">Mark rest present</button>`:''}</div>
+  <div class="plist" style="${classStyle(c)}">
+    <div class="sec">Students · ${studs.length}</div>${studs.map((p,k) => row(p,k+1,false)).join('') || '<div class="prow z1 muted">No students yet — add them in Roster.</div>'}
+    <div class="sec">Teaching Assistants · ${tas.length}</div>${tas.map((p,k) => row(p,k+1,true)).join('') || '<div class="prow z1 muted">No TAs yet.</div>'}
+  </div>`;
+}
+const markOf2 = (c,p,d) => (c.att[p.id]||{})[d];
+
+/* ---------- Overview (all classes) ---------- */
+function viewOverview(t){
+  if (!t.classes.length) return `<div class="card muted">No classes in this term yet.</div>`;
+  const chips = `<div class="strip" style="padding-top:0;margin-bottom:8px"><button class="chip ${state.ovClass==='all'?'on':''}" data-act="ov" data-id="all">All classes</button>${t.classes.map(c => `<button class="chip ${state.ovClass===c.id?'on':''}" data-act="ov" data-id="${c.id}">${esc(c.name)}</button>`).join('')}</div>`;
+  const list = state.ovClass === 'all' ? t.classes : t.classes.filter(c => c.id === state.ovClass);
+  return `${chips}<div class="notice info rotate-hint" style="align-items:center;gap:8px">📱↻ Turn your phone sideways to see more weeks.</div>
+    ${list.map(c => gridFor(t,c)).join('')}
+    <div class="legend">
+      <span><i style="background:var(--g)"></i>Never missed</span>
+      <span><i style="background:var(--m)"></i>Missed, refund ok</span>
+      <span><i style="background:var(--y)"></i>1 more miss = no refund</span>
+      <span><i style="background:var(--r)"></i>No refund</span>
+      <span><i style="background:var(--hol)"></i>Holiday / no class</span>
+      <span>✓ present · <b>1 2 3</b> = absence # · <b style="color:#c98a00">·</b> not entered</span>
+    </div>`;
+}
+function gridFor(t, c){
+  const cl = cols(t,c), edit = canEdit(c) && !isLocked(t,c);
+  const todaySess = (cl.filter(x => x.type==='session' && x.date<=TODAY).pop()||{}).date;
+  const head = `<tr><th class="nm">Name</th>${cl.map(x => x.type==='holiday'
+      ? `<th class="wcol hol">${md(x.date)}<small>${esc(x.label.slice(0,7))}</small></th>`
+      : `<th class="wcol ${x.date===todaySess?'today':''}">${md(x.date)}<small>W${x.n}</small></th>`).join('')}<th class="ms">Miss</th><th class="rf">Refund</th></tr>`;
+  const cells = (p, isTA, s) => cl.map(x => {
+    if (x.type === 'holiday') return `<td class="wcol hol"></td>`;
+    const tap = edit && x.date <= TODAY ? ` tap" data-act="goto" data-c="${c.id}" data-d="${x.date}` : '';
+    const v = markOf2(c,p,x.date);
+    if (v === 'P') return `<td class="wcol p${tap}">✓</td>`;
+    if (v === 'A') {
+      if (isTA) return `<td class="wcol a-o${tap}">✗</td>`;
+      const k = s.absNo[x.date]; const cls = k > s.max ? 'a-r' : k === s.max ? 'a-y' : 'a-o';
+      return `<td class="wcol ${cls}${tap}">${k}</td>`;
+    }
+    if (x.date <= TODAY) return `<td class="wcol um${tap}">·</td>`;
+    return `<td class="wcol"></td>`;
+  }).join('');
+  let k = 0;
+  const sRows = c.students.map(p => { const s = stats(t,c,p); const z = p.withdrawn ? 'z1 wd' : (++k % 2 ? 'z1' : 'z2');
+    return `<tr class="${z}"><td class="nm" title="${esc(p.name)}"><span class="n">${p.withdrawn?'–':k}</span>${esc(p.name)}</td>${cells(p,false,s)}<td class="ms st-${s.st}">${s.abs}</td><td class="rf st-${s.st}">${refundText(t,c,p,s)}</td></tr>`; }).join('');
+  let j = 0;
+  const tRows = c.tas.map(p => { const s = stats(t,c,p); const z = p.withdrawn ? 'z1 wd' : (++j % 2 ? 'z1' : 'z2');
+    return `<tr class="${z}"><td class="nm" title="${esc(p.name)}"><span class="n">${p.withdrawn?'–':j}</span>${esc(p.name)}</td>${cells(p,true,s)}<td class="ms">${s.abs}</td><td class="rf">${s.pres}d</td></tr>`; }).join('');
+  return `<div class="ovhead"><span class="classdot" style="${classStyle(c)};background:var(--zd)"></span><h3>${esc(c.name)} <span class="small muted">· ${esc(teacherName(c.teacher))}${isLocked(t,c)?' · 🔒':''}</span></h3><button class="btn sm light" data-act="csv" data-c="${c.id}">⬇ CSV</button></div>
+    <div class="gridwrap"><table class="grid" style="${classStyle(c)}"><thead>${head}</thead><tbody>${sRows || `<tr class="z1"><td class="nm muted">No students</td>${cl.map(()=>'<td class="wcol"></td>').join('')}<td class="ms"></td><td class="rf"></td></tr>`}
+    ${c.tas.length ? `<tr class="tasep"><td class="nm" style="background:#f3f1ec">TEACHING ASSISTANTS</td><td colspan="${cl.length+2}"></td></tr>${tRows}` : ''}</tbody></table></div>
+    <div class="small muted" style="margin:0 2px 16px">Refund: attend ${c.minAttend} of ${c.sessions} (max ${maxAbsences(c)} absences) · ${fullDate(c.start)} – ${fullDate(lastDate(t,c))}</div>`;
+}
+
+/* ---------- Roster ---------- */
+function viewRoster(t){
+  const mine = t.classes.filter(canEdit);
+  if (!mine.length) return `<div class="card"><h2>Roster</h2><p class="muted">Only the class teacher, helpers or an admin can edit a roster.</p></div>`;
+  const c = mine.find(x => x.id === state.rosterClass) || mine.find(x => x.id === state.classId) || mine[0]; state.rosterClass = c.id;
+  const locked = isLocked(t,c), dis = locked ? 'disabled' : '';
+  const tabs = mine.length > 1 ? `<div class="strip" style="padding-top:0;margin-bottom:10px">${mine.map(x => `<button class="chip ${x.id===c.id?'on':''}" data-act="rcls" data-id="${x.id}">${esc(x.name)}</button>`).join('')}</div>` : '';
+  const sList = c.students.map(p => `<div class="li ${p.withdrawn?'wd':''}"><span class="nm">${esc(p.name)}</span>
+      <select data-chg="deposit" data-p="${p.id}" ${dis} aria-label="Deposit">${[0,50,100].map(v => `<option value="${v}" ${Number(p.deposit)===v?'selected':''}>${v?'$'+v:'$ –'}</option>`).join('')}</select>
+      <button class="icon" data-act="rename" data-p="${p.id}" ${dis} title="Rename">✎</button>
+      <button class="icon" data-act="withdraw" data-p="${p.id}" ${dis} title="${p.withdrawn?'Restore':'Withdraw (keep history)'}">${p.withdrawn?'↺':'⊘'}</button>
+      <button class="icon del" data-act="delperson" data-p="${p.id}" ${dis} title="Delete">✕</button></div>`).join('') || '<p class="muted small">No students yet.</p>';
+  const tList = c.tas.map(p => `<div class="li ${p.withdrawn?'wd':''}"><span class="nm">${esc(p.name)} <span class="muted small">${esc(p.grade||'')}</span></span>
+      <button class="icon" data-act="rename" data-p="${p.id}" ${dis} title="Rename">✎</button>
+      <button class="icon" data-act="withdraw" data-p="${p.id}" ${dis} title="${p.withdrawn?'Restore':'Withdraw'}">${p.withdrawn?'↺':'⊘'}</button>
+      <button class="icon del" data-act="delperson" data-p="${p.id}" ${dis} title="Delete">✕</button></div>`).join('') || '<p class="muted small">No TAs yet.</p>';
+  const others = state.data.teachers.filter(x => x.email !== c.teacher && !c.delegates.includes(x.email));
+  return `${tabs}${locked?`<div class="notice bad">🔒 Class ended — roster is locked.</div>`:''}
+  <div class="card" style="${classStyle(c)}"><h2><span class="classdot" style="background:var(--zd)"></span>${esc(c.name)} · Students <span class="count">${c.students.filter(p=>!p.withdrawn).length}</span></h2>
+    <div class="list">${sList}</div>
+    <div class="addrow"><input type="text" id="newStudent" placeholder="Student full name" ${dis}><select class="in" id="newDeposit" ${dis}><option value="100">$100</option><option value="50">$50</option><option value="0">$ –</option></select><button class="btn" data-act="addstudent" ${dis}>Add</button></div>
+    <p class="small muted">⊘ withdraw keeps past attendance (shown crossed out). ✕ deletes the person and their attendance.</p></div>
+  <div class="card"><h2>Teaching Assistants <span class="count">${c.tas.filter(p=>!p.withdrawn).length}</span></h2>
+    <div class="list">${tList}</div>
+    <div class="addrow"><input type="text" id="newTA" placeholder="TA full name" ${dis}><select class="in" id="newGrade" ${dis}>${['9th','10th','11th','12th'].map(g => `<option>${g}</option>`).join('')}</select><button class="btn" data-act="addta" ${dis}>Add</button></div></div>
+  <div class="card"><h2>Teachers</h2>
+    <div class="list"><div class="li"><span class="nm">👑 ${esc(teacherName(c.teacher))}</span><span class="small muted">Main teacher</span></div>
+    ${c.delegates.map(e => `<div class="li"><span class="nm">🤝 ${esc(teacherName(e))}</span><span class="small muted">Helper</span>${isMain(c)?`<button class="icon del" data-act="deldelegate" data-e="${esc(e)}">✕</button>`:''}</div>`).join('')}</div>
+    ${isMain(c) ? `<div class="addrow"><select class="in" id="newDelegate" style="flex:1"><option value="">Choose a teacher who can check in for you…</option>${others.map(x => `<option value="${esc(x.email)}">${esc(x.name)}</option>`).join('')}</select><button class="btn" data-act="adddelegate">Add</button></div><p class="small muted">Helpers can take attendance and edit this roster when you are away.</p>` : ''}
+  </div>`;
+}
+
+/* ---------- Admin ---------- */
+function viewAdmin(t){
+  const d = state.data;
+  const teacherOpts = sel => `<option value="">— not assigned —</option>` + d.teachers.map(x => `<option value="${esc(x.email)}" ${x.email===sel?'selected':''}>${esc(x.name)}</option>`).join('');
+  const termCard = `<div class="card"><h2>New term</h2>
+    <div class="grid2"><label class="field">Year<input type="number" id="ntYear" value="${Number(TODAY.slice(0,4)) + (Number(TODAY.slice(5,7))>=9?1:0)}" min="2026" max="2040"></label>
+    <label class="field">Season<select class="in" id="ntSeason">${SEASONS.map(s => `<option>${s}</option>`).join('')}</select></label></div>
+    <div class="row" style="margin-top:10px"><button class="btn" data-act="addterm">Create term</button><span class="small muted">Years show to teachers once that year begins.</span></div></div>`;
+  if (!t) return termCard + teachersCard();
+  const hol = [...t.holidays].sort((a,b) => a.date.localeCompare(b.date)).map(h => `<div class="li"><span class="nm">🎌 ${md(h.date)}/${h.date.slice(2,4)} · ${esc(h.label)}</span><span class="small muted">${h.classIds?.length ? h.classIds.map(id => esc(t.classes.find(c=>c.id===id)?.name||'?')).join(', ') : 'All classes'}</span><button class="icon del" data-act="delhol" data-id="${h.id}">✕</button></div>`).join('') || '<p class="muted small">No holidays.</p>';
+  const classCards = t.classes.map(c => {
+    const dur = c.kind === 'summer' ? 'summer' : String(c.sessions);
+    return `<div class="ccard" style="${classStyle(c)}"><h4><span class="classdot" style="background:var(--zd)"></span>${esc(c.name)}<span class="spacer"></span><button class="btn sm danger" data-act="delclass" data-c="${c.id}">Delete</button></h4>
+    <div class="grid2">
+      <label class="field">Class name<input type="text" value="${esc(c.name)}" data-chg="cf" data-c="${c.id}" data-f="name"></label>
+      <label class="field">Grades<input type="text" value="${esc(c.grades||'')}" data-chg="cf" data-c="${c.id}" data-f="grades"></label>
+      <label class="field">Length<select class="in" data-chg="cf" data-c="${c.id}" data-f="duration">
+        <option value="8" ${dur==='8'?'selected':''}>8 weeks (Sundays)</option><option value="10" ${dur==='10'?'selected':''}>10 weeks (Sundays)</option>
+        <option value="12" ${dur==='12'?'selected':''}>12 weeks (Sundays)</option><option value="summer" ${dur==='summer'?'selected':''}>Summer · 5 days (Mon–Fri)</option></select></label>
+      <label class="field">First class<input type="date" value="${c.start}" data-chg="cf" data-c="${c.id}" data-f="start"></label>
+      <label class="field">Refund if attended ≥<input type="number" min="0" max="${c.sessions}" value="${c.minAttend}" data-chg="cf" data-c="${c.id}" data-f="minAttend"></label>
+      <label class="field">Color<select class="in" data-chg="cf" data-c="${c.id}" data-f="color">${Object.keys(COLORS).map(k => `<option ${k===c.color?'selected':''}>${k}</option>`).join('')}</select></label>
+      <label class="field" style="grid-column:1/-1">Main teacher<select class="in" data-chg="cf" data-c="${c.id}" data-f="teacher">${teacherOpts(c.teacher)}</select></label>
+    </div>
+    <p class="small muted" style="margin:8px 0 0">Last class: <b>${fullDate(lastDate(t,c))}</b> · max ${maxAbsences(c)} absences for refund</p>
+    ${TODAY > lastDate(t,c) ? `<div class="row" style="margin-top:8px">${c.unlockUntil && TODAY <= c.unlockUntil ? `<span class="small" style="color:var(--g-ink)">Unlocked for teachers until ${md(c.unlockUntil)}</span><button class="btn sm light" data-act="lock" data-c="${c.id}">Lock now</button>` : `<span class="small muted">🔒 Locked for teachers</span><button class="btn sm ghost" data-act="unlock" data-c="${c.id}">Unlock 3 days</button>`}</div>` : ''}
+    </div>`;
+  }).join('') || '<p class="muted">No classes yet.</p>';
+  return `<div class="notice info">Editing <b>${esc(t.season)} ${t.year}</b>. Switch terms at the top.</div>
+  <div class="card"><h2>Classes</h2>${classCards}
+    <h2 style="margin-top:14px">Add class</h2>
+    <div class="grid2">
+      <label class="field">Class name<input type="text" id="ncName" placeholder="e.g. Math Tutoring"></label>
+      <label class="field">Grades<input type="text" id="ncGrades" placeholder="Grades 1–3"></label>
+      <label class="field">Length<select class="in" id="ncDur"><option value="8">8 weeks (Sundays)</option><option value="10">10 weeks (Sundays)</option><option value="12" selected>12 weeks (Sundays)</option><option value="summer" ${t.season==='Summer'?'selected':''}>Summer · 5 days</option></select></label>
+      <label class="field">First class<input type="date" id="ncStart"></label>
+      <label class="field">Main teacher<select class="in" id="ncTeacher">${teacherOpts('')}</select></label>
+      <label class="field">Color<select class="in" id="ncColor">${Object.keys(COLORS).map(k => `<option>${k}</option>`).join('')}</select></label>
+    </div><div class="row" style="margin-top:10px"><button class="btn" data-act="addclass">Add class</button></div>
+  </div>
+  <div class="card"><h2>Holidays / no-class days</h2><div class="list">${hol}</div>
+    <div class="grid2" style="margin-top:10px">
+      <label class="field">Date<input type="date" id="nhDate"></label>
+      <label class="field">Name<input type="text" id="nhLabel" placeholder="Thanksgiving, Snow…"></label>
+      <label class="field" style="grid-column:1/-1">Applies to<select class="in" id="nhClass"><option value="">All classes</option>${t.classes.map(c => `<option value="${c.id}">${esc(c.name)} only</option>`).join('')}</select></label>
+    </div><div class="row" style="margin-top:10px"><button class="btn" data-act="addhol">Add holiday</button><span class="small muted">The class moves one week later automatically.</span></div>
+  </div>
+  ${termCard}${teachersCard()}
+  <div class="card"><h2>Data</h2><div class="row">
+    <button class="btn light" data-act="backup">⬇ Download backup (JSON)</button>
+    <button class="btn danger" data-act="delterm">Delete this term</button>
+    ${DEMO ? `<button class="btn danger" data-act="resetdemo">Reset demo data</button>` : ''}
+  </div>${!DEMO ? `<p class="small muted">Drive file ID: ${esc(fileId())}</p>` : ''}</div>`;
+}
+function teachersCard(){
+  const d = state.data;
+  return `<div class="card"><h2>Teachers <span class="count">${d.teachers.length}</span></h2>
+  <div class="list">${d.teachers.map(x => `<div class="li"><span class="nm">${esc(x.name)} <span class="small muted">${esc(x.email)}</span></span>
+    <button class="icon ${d.admins.includes(x.email)?'':''}" data-act="toggleadmin" data-e="${esc(x.email)}" title="Toggle admin">${d.admins.includes(x.email) || CONFIG.ADMINS.map(lc).includes(x.email) ? '⭐' : '☆'}</button>
+    <button class="icon del" data-act="delteacher" data-e="${esc(x.email)}">✕</button></div>`).join('')}</div>
+  <div class="grid2" style="margin-top:10px"><label class="field">Name<input type="text" id="ntName" placeholder="Ms. Kim"></label><label class="field">Google email<input type="email" id="ntEmail" placeholder="name@gmail.com"></label></div>
+  <div class="row" style="margin-top:10px"><button class="btn" data-act="addteacher">Add teacher</button><span class="small muted">☆/⭐ = admin. Use the same accounts as the upload page.</span></div></div>`;
+}
+
+/* ---------- login / setup / blocked ---------- */
+function renderLogin(){
+  const inApp = /KAKAOTALK|Instagram|FBAN|FBAV|Line\/|NAVER|DaumApps/i.test(navigator.userAgent);
+  const demoUsers = DEMO ? seed(true).teachers : [];
+  app.innerHTML = `<div class="login">
+    <div class="logo-chip">${LOGO_IMG}</div>
+    <h1>HCTP Attendance</h1>
+    <p>Teachers only.<br>Sign in with your registered Google account.<br>Please check the <b>Google Drive</b> box on the consent screen.</p>
+    ${inApp ? `<div class="notice warn" style="text-align:left">⚠ Google sign-in is blocked inside KakaoTalk / in-app browsers.<br>Tap <b>⋮ → “Open in another browser”</b> and use Chrome or Samsung Internet.</div>` : ''}
+    ${DEMO ? '' : `<button class="gbtn" data-act="signin"><b>G</b> Sign in with Google</button>`}
+    ${DEMO ? `<div class="demo"><b>Demo mode</b><p class="small muted" style="margin:4px 0 0">Sign-in is simulated and data stays on this device only. Choose who you are:</p>
+      ${demoUsers.map(u => `<button class="btn ${u.email.startsWith('admin')?'':'ghost'}" data-act="demologin" data-e="${u.email}" data-n="${esc(u.name)}">${esc(u.name)}${u.email.startsWith('admin')?' (admin)':''}</button>`).join('')}</div>` : ''}
+    <p class="small" style="margin-top:28px"><a href="${CONFIG.SITE_URL}">← HCTP site</a></p>
+  </div>`;
+}
+function renderSetup(){
+  app.innerHTML = `<div class="login"><div class="logo-chip">${LOGO_IMG}</div><h1>First-time setup</h1>
+    <p>No attendance file is linked yet. Create <b>hctp-attendance.json</b> in your Google Drive with the Fall 2026 classes and rosters.</p>
+    <button class="btn" data-act="createfile">Create attendance file</button>
+    <p class="small muted" style="margin-top:20px">Already have one? Put its ID in CONFIG.DATA_FILE_ID.</p>
+    <button class="btn light sm" data-act="signout">Sign out</button></div>`;
+}
+function renderBlocked(){
+  app.innerHTML = `<div class="login"><div class="logo-chip">${LOGO_IMG}</div><h1>HCTP Attendance</h1>
+    <div class="notice bad">${state.denied ? `<b>${esc(state.user.email)}</b> is not registered as a teacher.` : esc(state.error)}</div>
+    <button class="btn light" data-act="signout">Use another account</button></div>`;
+}
+
+/* =====================================================================
+   ACTIONS
+   ===================================================================== */
+const T = () => curTerm();
+const C = id => T().classes.find(c => c.id === id);
+function op(fn){ const tid = state.termId; return d => { const t = d.terms.find(x => x.id === tid); if (t) fn(t, d); }; }
+function opCls(cid, fn){ return op(t => { const c = t.classes.find(x => x.id === cid); if (c) fn(c, t); }); }
+const val = id => ($('#'+id)?.value || '').trim();
+
+const ACT = {
+  signin: () => signIn(),
+  reauth: () => signIn(),
+  demologin: el => { state.user = {email:el.dataset.e, name:el.dataset.n}; localStorage.setItem('hctpDemoUser', JSON.stringify(state.user)); loadData(); },
+  signout: () => { state.menu = false; signOut(); },
+  createfile: () => createDataFile(),
+  menu: () => { state.menu = true; render(); },
+  closemenu: (el,e) => { if (e.target !== el) return; state.menu = false; render(); },
+  refresh: () => { state.menu = false; refreshData(false); render(); },
+  view: (el,e) => { e.preventDefault(); state.view = el.dataset.v; localStorage.setItem('hctpView', state.view); render(); scrollTo(0,0); },
+  term: el => { state.termId = el.dataset.id; state.classId = null; state.ovClass = 'all'; render(); },
+  cls: el => { state.classId = el.dataset.id; render(); },
+  rcls: el => { state.rosterClass = el.dataset.id; render(); },
+  ov: el => { state.ovClass = el.dataset.id; render(); },
+  date: el => { state.dateByClass[state.classId] = el.dataset.d; render(); },
+  goto: el => { state.classId = el.dataset.c; state.dateByClass[el.dataset.c] = el.dataset.d; state.view = 'check'; render(); scrollTo(0,0); },
+  mark: el => {
+    const c = C(state.classId), date = state.dateByClass[c.id], pid = el.dataset.p, v = el.dataset.v;
+    if (isLocked(T(),c) || date > TODAY) return;
+    const next = markOf2(c,{id:pid},date) === v ? null : v;
+    if (navigator.vibrate) navigator.vibrate(10);
+    commit(opCls(c.id, x => { x.att[pid] ||= {}; if (next) x.att[pid][date] = next; else delete x.att[pid][date]; }));
+  },
+  allpresent: () => {
+    const c = C(state.classId), date = state.dateByClass[c.id];
+    const ids = [...c.students, ...c.tas].filter(p => !p.withdrawn && !markOf2(c,p,date)).map(p => p.id);
+    commit(opCls(c.id, x => ids.forEach(id => { x.att[id] ||= {}; x.att[id][date] ||= 'P'; })));
+    toast(`${ids.length} marked present`);
+  },
+  addstudent: () => {
+    const name = val('newStudent'); if (!name) return toast('Type a name first');
+    const p = {id:uid(), name, deposit:Number(val('newDeposit')), withdrawn:false};
+    commit(opCls(state.rosterClass, c => { if (!c.students.some(s => s.id === p.id)) c.students.push({...p}); })); toast(`${name} added`);
+  },
+  addta: () => {
+    const name = val('newTA'); if (!name) return toast('Type a name first');
+    const p = {id:uid(), name, grade:val('newGrade'), withdrawn:false};
+    commit(opCls(state.rosterClass, c => { if (!c.tas.some(s => s.id === p.id)) c.tas.push({...p}); })); toast(`${name} added`);
+  },
+  rename: el => {
+    const c = C(state.rosterClass), p = [...c.students, ...c.tas].find(x => x.id === el.dataset.p);
+    const name = prompt('New name', p.name); if (!name || !name.trim()) return;
+    commit(opCls(c.id, x => { const q = [...x.students, ...x.tas].find(y => y.id === p.id); if (q) q.name = name.trim(); }));
+  },
+  withdraw: el => commit(opCls(state.rosterClass, x => { const q = [...x.students, ...x.tas].find(y => y.id === el.dataset.p); if (q) q.withdrawn = !q.withdrawn; })),
+  delperson: el => {
+    const c = C(state.rosterClass), p = [...c.students, ...c.tas].find(x => x.id === el.dataset.p);
+    if (!confirm(`Delete ${p.name} and all of their attendance?\n(Tip: use ⊘ Withdraw to keep history.)`)) return;
+    commit(opCls(c.id, x => { x.students = x.students.filter(y => y.id !== p.id); x.tas = x.tas.filter(y => y.id !== p.id); delete x.att[p.id]; }));
+  },
+  adddelegate: () => { const e = val('newDelegate'); if (!e) return; commit(opCls(state.rosterClass, x => { if (!x.delegates.includes(e)) x.delegates.push(e); })); },
+  deldelegate: el => commit(opCls(state.rosterClass, x => { x.delegates = x.delegates.filter(y => y !== el.dataset.e); })),
+  csv: el => downloadCSV(T(), C(el.dataset.c)),
+
+  /* admin */
+  addterm: () => {
+    const year = Number(val('ntYear')), season = val('ntSeason');
+    if (!(year >= 2026 && year <= 2100)) return toast('Enter a valid year');
+    const id = `${year}-${season.toLowerCase().replace(/[^a-z]/g,'')}`;
+    if (state.data.terms.some(t => t.id === id)) { state.termId = id; state.year = year; render(); return toast('That term already exists'); }
+    commit(d => { if (!d.terms.some(t => t.id === id)) d.terms.push({id, year, season, holidays:[], classes:[]}); });
+    state.termId = id; state.year = year; render(); toast(`${season} ${year} created`);
+  },
+  delterm: () => {
+    const t = T(); if (prompt(`Type DELETE to remove ${t.season} ${t.year} and all of its attendance.`) !== 'DELETE') return;
+    const id = t.id; commit(d => { d.terms = d.terms.filter(x => x.id !== id); }); state.termId = null; pickDefaults(); render();
+  },
+  addclass: () => {
+    const name = val('ncName'), start = val('ncStart'); if (!name || !start) return toast('Name and first class date are required');
+    const dur = DURATIONS[val('ncDur')];
+    if (dur.kind === 'sunday' && parse(start).getDay() !== 0) return toast('Sunday classes must start on a Sunday');
+    if (dur.kind === 'summer' && [0,6].includes(parse(start).getDay())) return toast('Summer week must start on a weekday');
+    const c = {id:uid(), name, grades:val('ncGrades'), color:val('ncColor'), kind:dur.kind, sessions:dur.sessions, minAttend:dur.min, start, teacher:val('ncTeacher'), delegates:[], unlockUntil:'', students:[], tas:[], att:{}};
+    commit(op(t => { if (!t.classes.some(x => x.id === c.id)) t.classes.push(JSON.parse(JSON.stringify(c))); })); toast(`${name} added`);
+  },
+  delclass: el => {
+    const c = C(el.dataset.c); if (!confirm(`Delete ${c.name} with its roster and attendance?`)) return;
+    commit(op(t => { t.classes = t.classes.filter(x => x.id !== c.id); }));
+  },
+  unlock: el => commit(opCls(el.dataset.c, c => { c.unlockUntil = addDays(TODAY, 3); })),
+  lock: el => commit(opCls(el.dataset.c, c => { c.unlockUntil = ''; })),
+  addhol: () => {
+    const date = val('nhDate'), label = val('nhLabel') || 'No class', cid = val('nhClass');
+    if (!date) return toast('Pick a date');
+    const h = {id:uid(), date, label, classIds: cid ? [cid] : []};
+    commit(op(t => { if (!t.holidays.some(x => x.id === h.id)) t.holidays.push(h); })); toast(`${label} added`);
+  },
+  delhol: el => commit(op(t => { t.holidays = t.holidays.filter(h => h.id !== el.dataset.id); })),
+  addteacher: () => {
+    const name = val('ntName'), email = lc(val('ntEmail'));
+    if (!/^\S+@\S+\.\S+$/.test(email)) return toast('Enter a valid email');
+    commit(d => { if (!d.teachers.some(t => t.email === email)) d.teachers.push({email, name: name || email}); }); toast('Teacher added');
+  },
+  delteacher: el => { const e = el.dataset.e; if (e === state.user.email) return toast("You can't remove yourself"); if (!confirm(`Remove ${teacherName(e)}?`)) return;
+    commit(d => { d.teachers = d.teachers.filter(t => t.email !== e); d.admins = d.admins.filter(a => a !== e); }); },
+  toggleadmin: el => { const e = el.dataset.e; if (CONFIG.ADMINS.map(lc).includes(e)) return toast('Set in CONFIG.ADMINS');
+    if (e === state.user.email) return toast("You can't change your own admin role");
+    commit(d => { d.admins = d.admins.includes(e) ? d.admins.filter(a => a !== e) : [...d.admins, e]; }); },
+  backup: () => download(`hctp-attendance-backup-${TODAY}.json`, JSON.stringify(state.data, null, 2), 'application/json'),
+  resetdemo: () => { if (!confirm('Reset all demo data?')) return; localStorage.removeItem('hctpDemoData'); state.termId = null; loadData(); },
+};
+const CHG = {
+  year: el => { state.year = Number(el.value); const t = termsOfYear(state.year).pop(); if (t) state.termId = t.id; render(); },
+  deposit: el => commit(opCls(state.rosterClass, x => { const q = x.students.find(y => y.id === el.dataset.p); if (q) q.deposit = Number(el.value); })),
+  cf: el => {
+    const f = el.dataset.f, v = el.value;
+    if (f === 'start' && !v) return render();
+    commit(opCls(el.dataset.c, c => {
+      if (f === 'duration') { const d = DURATIONS[v]; c.kind = d.kind; c.sessions = d.sessions; c.minAttend = d.min; }
+      else if (f === 'minAttend') c.minAttend = Math.max(0, Math.min(c.sessions, Number(v)||0));
+      else c[f] = v;
+    }));
+  },
+};
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]'); if (!el || el.disabled) return;
+  const fn = ACT[el.dataset.act]; if (fn) fn(el, e);
+});
+document.addEventListener('change', e => { const el = e.target.closest('[data-chg]'); if (el && CHG[el.dataset.chg]) CHG[el.dataset.chg](el); });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const map = {newStudent:'addstudent', newTA:'addta', ntEmail:'addteacher', nhLabel:'addhol'};
+  const a = map[e.target.id]; if (a) ACT[a]();
+});
+
+/* ---------- export ---------- */
+function download(name, text, type){ const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], {type})); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
+function downloadCSV(t, c){
+  const cl = cols(t,c), q = s => `"${String(s).replace(/"/g,'""')}"`;
+  const head = ['Role','#','Name','Deposit', ...cl.map(x => x.type==='holiday' ? `${md(x.date)} ${x.label}` : md(x.date)), 'Missed', 'Refund'];
+  const line = (p, role, k) => { const s = stats(t,c,p);
+    return [role + (p.withdrawn?' (withdrawn)':''), k, p.name, role==='Student' ? (p.deposit||0) : '',
+      ...cl.map(x => { if (x.type==='holiday') return ''; const v = markOf2(c,p,x.date); return v==='P' ? 'Yes' : v==='A' ? (role==='Student' ? s.absNo[x.date] : 'No') : ''; }),
+      s.abs, role==='Student' ? refundText(t,c,p,s) : `${s.pres} days`]; };
+  const rows = [[`${c.name} ${t.season} ${t.year}`], head, ...c.students.map((p,i) => line(p,'Student',i+1)), [], ...c.tas.map((p,i) => line(p,'TA',i+1))];
+  download(`${c.name.replace(/\W+/g,'_')}_${t.year}_${t.season.replace(/\W+/g,'')}.csv`, '﻿' + rows.map(r => r.map(q).join(',')).join('\r\n'), 'text/csv');
+}
+
+/* =====================================================================
+   BOOT
+   ===================================================================== */
+(function boot(){
+  if (DEMO) {
+    try { const u = JSON.parse(localStorage.getItem('hctpDemoUser')||'null'); if (u) { state.user = u; return loadData(); } } catch {}
+    return render();
+  }
+  try {
+    const s = JSON.parse(sessionStorage.getItem('hctpTok')||'null');
+    if (s && s.exp > Date.now()) { auth.token = s.token; auth.exp = s.exp; return afterAuth(); }
+  } catch {}
+  render();
+})();
+</script>
+</body>
+</html>
